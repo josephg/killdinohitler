@@ -1,6 +1,7 @@
 canvas = document.getElementsByTagName('canvas')[0]
 canvas.width = 1024
 canvas.height = 768
+TAU = Math.PI * 2
 
 ctx = canvas.getContext '2d'
 
@@ -12,6 +13,7 @@ dt = 33
 myId = null
 me = null # The entry in players, for convenience.
 players = {}
+bullets = []
 
 TILE_SIDE = 64
 
@@ -23,8 +25,21 @@ loadTex = (name) ->
   img
 
 textures = {}
-textures[name] = loadTex name for name in ['grass', 'dirt']
+textures[name] = loadTex name for name in ['sheet', 'character']
 
+frames =
+  sand:  [0,0]
+  grass: [1,0]
+  dirt:  [2,0]
+  concrete: [3,0]
+  mud:   [4,0]
+
+  ammo:  [0,1]
+
+drawSprite = (name, x, y) ->
+  f = frames[name]
+  throw new Error "missing frame data for #{name}" unless f
+  ctx.drawImage textures.sheet, f[0] * 96, f[1] * 96, 96, 96, x, y, 96, 96
 
 map = null
 
@@ -37,10 +52,20 @@ window.location.hash = username
 requestAnimationFrame = window.requestAnimationFrame or window.mozRequestAnimationFrame or
                         window.webkitRequestAnimationFrame or window.msRequestAnimationFrame
 
+shoot = (p) ->
+  bullets.push {x:p.x, y:p.y, angle:p.angle, age:0}
+
 update = ->
   for id, p of players
     p.x += p.dx * 5
     p.y += p.dy * 5
+
+  for b in bullets
+    b.age++
+    b.x -= 10 * Math.cos b.angle
+    b.y -= 10 * Math.sin b.angle
+
+  bullets.shift() while bullets.length > 0 and bullets[0].age > 50
 
 draw = ->
   ctx.fillStyle = 'black'
@@ -53,25 +78,31 @@ draw = ->
     bot = me.y + 384
 
     ctx.save()
-    ctx.translate -(me.x - 512), -(me.y - 384)
+    ctx.translate -(Math.floor(me.x) - 512), -(Math.floor(me.y) - 384)
 
     for y in [toTile(top)..toTile(bot)]
       for x in [toTile(left)..toTile(right)]
-        if textures[map.tiles[x]?[y]]
-          ctx.drawImage textures[map.tiles[x][y]], x * TILE_SIDE, y * TILE_SIDE
+        if map.tiles[x]?[y]
+          drawSprite map.tiles[x][y], x * TILE_SIDE - 32, y * TILE_SIDE - 32
+          #ctx.drawImage textures[map.tiles[x][y]], x * TILE_SIDE, y * TILE_SIDE
 
-    psize = 32
+    psize = 64
     ctx.textAlign = 'center'
     ctx.font = '15px sans-serif'
     for id, player of players
       ctx.fillStyle = 'white'
-      ctx.fillText player.name, player.x, player.y - 22
-      ctx.fillStyle = 'red'
+      ctx.fillText player.name, player.x, player.y - 33
+      #ctx.fillStyle = 'red'
       ctx.save()
       ctx.translate player.x, player.y
       ctx.rotate player.angle
-      ctx.fillRect -psize/2, -psize/2, psize, psize
+      ctx.drawImage textures.character, -psize/2, -psize/2
+      #ctx.fillRect -psize/2, -psize/2, psize, psize
       ctx.restore()
+ 
+    ctx.fillStyle = 'black'
+    for b in bullets
+      ctx.fillRect b.x - 5, b.y - 5, 10, 10
 
     ctx.restore()
 
@@ -84,6 +115,9 @@ runFrame = ->
 
 ws.onmessage = (msg) ->
   msg = JSON.parse msg.data
+
+  return unless me or msg.type is 'login'
+
   switch msg.type
     when 'login'
       map = msg.map
@@ -98,8 +132,12 @@ ws.onmessage = (msg) ->
       console.log 'dc', msg.id
     when 'pos'
       p = players[msg.id]
-      if p
-        p[k] = msg[k] for k in ['x', 'y', 'dx', 'dy', 'angle']
+      p[k] = msg[k] for k in ['x', 'y', 'dx', 'dy']
+    when 'angle'
+      p = players[msg.id]
+      p.angle = msg.angle
+    when 'attack'
+      shoot players[msg.id]
 
 send = (msg) -> ws.send JSON.stringify msg
 
@@ -113,9 +151,10 @@ rateLimit = (fn) ->
         queuedMessage = false
       , 50
 
-sendPos = -> send {type:'pos', x:me.x, y:me.y, dx:me.dx, dy:me.dy, angle:me.angle}
+sendPos = -> send {type:'pos', x:me.x, y:me.y, dx:me.dx, dy:me.dy}
 
-sendAngle = rateLimit sendPos
+roundSome = (x) -> Math.floor(x * 1000) / 1000
+sendAngle = rateLimit -> send {type:'angle', angle:roundSome me.angle}
 
 ws.onopen = ->
   console.log 'open'
@@ -141,6 +180,12 @@ canvas.onmousedown = (e) ->
   x = e.pageX - canvas.offsetLeft
   y = e.pageY - canvas.offsetTop
 
+  sendPos()
+  send {type:'attack'}
+
+  shoot me
+
+  #send
   #self.attacking = true
   #send {attack:true, x, y}
 

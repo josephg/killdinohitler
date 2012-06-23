@@ -16,20 +16,57 @@ WebSocketServer = WebSocket.Server
 
 wss = new WebSocketServer {server: app}
 
-setInterval ->
-  b.update() if b?
-, dt
-
 nextId = 1000
 getNextId = -> nextId++
 players = {}
+bullets = []
+
+dist2 = (a, b) ->
+  dx = a.x - b.x
+  dy = a.y - b.y
+  dx * dx + dy * dy
+
+within = (a, b, dist) ->
+  dist2(a, b) < dist * dist
+
+shoot = (id) ->
+  p = players[id]
+  bullets.push {x:p.x, y:p.y, angle:p.angle, age:0, id}
+
+update = ->
+  for b in bullets
+    b.age++
+    b.x -= 10 * Math.cos b.angle
+    b.y -= 10 * Math.sin b.angle
+
+    # Urgh id is a string.
+    for id, p of players when id isnt "#{b.id}"
+      if within p, b, 35
+        # Hit.
+        console.log 'hit'
+
+
+
+  bullets.shift() while bullets.length > 0 and bullets[0].age > 50
+
+setInterval update, dt
 
 width = 64
 height = 64
 genMap = ->
   tiles = for x in [0...width]
     for y in [0...height]
-      if Math.random() < 0.9 then 'grass' else 'dirt'
+      r = Math.random()
+      if r < 0.2
+        'grass'
+      else if r < 0.4
+        'dirt'
+      #else if r < 0.6
+      #  'concrete'
+      else
+        'sand'
+      #else
+      #  'mud'
 
   {tiles, width, height}
 
@@ -43,11 +80,14 @@ broadcast = (msg, ignored) ->
     cc.send s
 
 wss.on 'connection', (c) ->
-  sendOthers = (msg) -> broadcast msg, c
+  id = getNextId()
+
+  sendOthers = (msg) ->
+    msg.id = id
+    broadcast msg, c
 
   state = 'connecting'
   name = null
-  id = getNextId()
   send = (msg) -> c.send JSON.stringify msg
   player = null
 
@@ -58,7 +98,7 @@ wss.on 'connection', (c) ->
 
       if state is 'connecting'
         name = msg.name
-        players[id] = player = {name, x:100, y:100, dx:0, dy:0, angle:0}
+        players[id] = player = {name, x:Math.random() * 10 * 64, y:Math.random() * 10 * 64, dx:0, dy:0, angle:0}
         throw new Error unless typeof name is 'string'
         state = 'ok'
         send {type:'login', map, id, players}
@@ -66,11 +106,15 @@ wss.on 'connection', (c) ->
       else
         switch msg.type
           when 'pos'
-            player[k] = msg[k] for k in ['x', 'y', 'dx', 'dy', 'angle']
-            msg.id = id
+            player[k] = msg[k] for k in ['x', 'y', 'dx', 'dy']
             sendOthers msg
+          when 'angle'
+            player.angle = msg.angle
+            sendOthers msg
+          when 'attack'
+            sendOthers msg
+            shoot id
             
-
       console.log msg
 
       #p = (players[c.name] ?= {alive:false, x:0, y:0})
