@@ -7,7 +7,7 @@ app.use express.static("#{__dirname}/")
 port = 8123
 
 # How frequently (in ms) should we advance the world
-dt = 33
+dt = 16
 snapshotDelay = 5
 bytesSent = bytesReceived = 0
 
@@ -54,21 +54,48 @@ setInterval update, dt
 width = 64
 height = 64
 genMap = ->
-  tiles = for x in [0...width]
+  ground = for x in [0...width]
     for y in [0...height]
       r = Math.random()
       if r < 0.2
-        'grass'
+        'tile'
       else if r < 0.4
+        'grass'
+      else if r < 0.6
         'dirt'
-      #else if r < 0.6
-      #  'concrete'
       else
-        'sand'
+        'cobble'
       #else
       #  'mud'
 
-  {tiles, width, height}
+  for x in [0...10]
+    for y in [0...10]
+      ground[x][y] = 'tile'
+
+  for x in [10...20]
+    for y in [0...10]
+      ground[x][y] = 'grass'
+
+  for x in [20...30]
+    for y in [0...10]
+      ground[x][y] = 'dirt'
+
+  for x in [0...10]
+    for y in [10...20]
+      ground[x][y] = 'cobble'
+
+  shadow = {}
+  scenery = {}
+
+  scenery[[4,9]] = 'topleft'
+  scenery[[4,10]] = 'botleft'
+  for x in [5..15]
+    scenery[[x,9]] = 'top'
+    scenery[[x,10]] = 'bot'
+  scenery[[16,9]] = 'topright'
+  scenery[[16,10]] = 'botright'
+
+  {layers:{ground, shadow, scenery}, width, height}
 
 
 map = genMap()
