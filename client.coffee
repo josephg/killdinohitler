@@ -36,8 +36,8 @@ frames =
   dudedown: [0,2,3]
   dudeleft: [3,2,3]
   dudeup: [6,2,3]
-  dudedead: [9,2]
-  duderight: [10,2,3]
+  duderight: [9,2,3]
+  dudedead: [9,2,2]
 
   bot: [0,1]
   top: [1,1]
@@ -71,14 +71,15 @@ requestAnimationFrame = window.requestAnimationFrame or window.mozRequestAnimati
 shoot = (p) ->
   bullets.push {x:p.x, y:p.y, angle:p.angle, age:0}
 
-canEnter = (tx, ty) ->
+canEnter = (tx, ty, p) ->
   return false unless 0 <= tx < map.width and 0 <= ty < map.height
-  map.layers.scenery[tx][ty] not in ['bot', 'botleft', 'botright', 'topleft', 'topright', 'top']
+  tileplayer = map.layers.player[tx]?[ty]
+  map.layers.scenery[tx][ty] not in ['bot', 'botleft', 'botright', 'topleft', 'topright', 'top'] and (!tileplayer or tileplayer is p)
 
-canEnterXY = (x, y) ->
+canEnterXY = (x, y, p) ->
   ts2 = TILE_SIDE / 2
   #(canEnter (toTile x-ts2), (toTile y-ts2)) and (canEnter (toTile x + ts2), (toTile y + ts2))
-  canEnter (toTile x), (toTile y)
+  canEnter (toTile x), (toTile y), p
 
 SPEED = 4
 
@@ -88,12 +89,15 @@ update = ->
       newx = p.x + p.dx * SPEED
       newy = p.y + p.dy * SPEED
 
-      newx = p.x unless canEnterXY newx, p.y
-      newy = p.y unless canEnterXY newx, newy
+      newx = p.x unless canEnterXY newx, p.y, p
+      newy = p.y unless canEnterXY newx, newy, p
 
       if newx isnt p.x or newy isnt p.y
+        map.layers.player[toTile p.x][toTile p.y] = null
         p.x = newx
         p.y = newy
+        map.layers.player[toTile p.x] ?= []
+        map.layers.player[toTile p.x][toTile p.y] = p
 
         p.f ?= 0
         p.ft ?= 0
@@ -136,7 +140,11 @@ draw = ->
     ctx.save()
     ctx.translate -(Math.floor(me.x) - 512), -(Math.floor(me.y) - 384)
 
-    for layer in ['ground', 'shadow', 'player', 'scenery']
+    psize = 64
+    ctx.textAlign = 'center'
+    ctx.font = '17px sans-serif'
+
+    for layer in ['ground', 'shadow', 'scenery']
       for y in [toTile(top)..toTile(bot)]
         for x in [toTile(left)..toTile(right)]
           #if layer in ['player', 'shadow', 'scenery'] # Sparse layers
@@ -144,25 +152,25 @@ draw = ->
           #else
           thing = map.layers[layer][x]?[y]
 
-          drawSprite thing, x * TILE_SIDE - 32, y * TILE_SIDE - 32 if thing
+          if thing
+            drawSprite thing, x * TILE_SIDE - 32, y * TILE_SIDE - 32 if thing
 
-    psize = 64
-    ctx.textAlign = 'center'
-    ctx.font = '17px sans-serif'
-    for id, player of players
-      ctx.fillStyle = 'black'
-      ctx.fillText player.name, player.x, player.y - 40
-      #ctx.fillStyle = 'red'
-      ctx.save()
-      ctx.translate player.x, player.y
-      #ctx.rotate player.angle
-      dir = ['left', 'up', 'right', 'down'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
-      #console.log player.angle, dir, Math.floor(player.angle + TAU / TAU * 4)
-      drawSprite "dude#{dir}", -64, -64, player.f
-      #ctx.strokeStyle = 'red'
-      #ctx.drawImage textures.character, -psize/2, -psize/2
-      #ctx.strokeRect -psize/2, -psize/2, psize, psize
-      ctx.restore()
+          if layer is 'scenery'
+            player = map.layers.player[x]?[y]
+            if player
+              ctx.fillStyle = 'black'
+              ctx.fillText player.name, player.x, player.y - 40
+              #ctx.fillStyle = 'red'
+              ctx.save()
+              ctx.translate player.x, player.y
+              #ctx.rotate player.angle
+              dir = ['left', 'up', 'right', 'down'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
+              #console.log player.angle, dir, Math.floor(player.angle + TAU / TAU * 4)
+              drawSprite "dude#{dir}", -64, -64, player.f
+              #ctx.strokeStyle = 'red'
+              #ctx.drawImage textures.character, -psize/2, -psize/2
+              #ctx.strokeRect -psize/2, -psize/2, psize, psize
+              ctx.restore()
  
     ctx.fillStyle = 'black'
     for b in bullets
@@ -203,6 +211,9 @@ ws.onmessage = (msg) ->
 
       myId = msg.id
       players = msg.players
+      for id, p of players
+        map.layers.player[toTile p.x] ?= []
+        map.layers.player[toTile p.x][toTile p.y] = p
       me = players[myId]
     when 'connected'
       players[msg.id] = msg.player
