@@ -1,0 +1,19 @@
+{
+  "author": "Joseph Gentle <josephg@gmail.com>",
+  "name": "killdinohitler",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/josephg/killdinohitler.git"
+  },
+  "dependencies": {
+    "coffee-script": "*",
+    "ws": "*",
+    "express": "*"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
