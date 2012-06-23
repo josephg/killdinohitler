@@ -1,23 +1,13 @@
 canvas = document.getElementsByTagName('canvas')[0]
 canvas.width = 1024
 canvas.height = 768
-TAU = Math.PI * 2
-
 ctx = canvas.getContext '2d'
 
 ws = new WebSocket "ws://#{window.location.host}"
 ws.onerror = (e) -> console.log e
 
-dt = 16
-
 myId = null
 me = null # The entry in players, for convenience.
-players = {}
-bullets = []
-
-TILE_SIDE = 64
-
-toTile = (x) -> Math.floor(x / TILE_SIDE)
 
 loadTex = (name) ->
   img = new Image
@@ -57,8 +47,6 @@ drawSprite = (name, x, y, a) ->
 
   ctx.drawImage textures.spritesheet, sx * 96, sy * 96, 96, 96, x, y, 96, 96
 
-map = null
-
 username = if window.location.hash
   window.location.hash.substr(1)
 else
@@ -68,59 +56,8 @@ window.location.hash = username
 requestAnimationFrame = window.requestAnimationFrame or window.mozRequestAnimationFrame or
                         window.webkitRequestAnimationFrame or window.msRequestAnimationFrame
 
-shoot = (p, angle) ->
-  bullets.push {x:p.x, y:p.y, angle:angle, age:0, p}
-
-canEnter = (tx, ty) ->
-  return false unless 0 <= tx < map.width and 0 <= ty < map.height
-  tileplayer = map.layers.player[tx]?[ty]
-  map.layers.scenery[tx][ty] not in ['bot', 'botleft', 'botright']
-
-canEnterXY = (x, y) ->
-  ts2 = TILE_SIDE / 2
-  #(canEnter (toTile x-ts2), (toTile y-ts2)) and (canEnter (toTile x + ts2), (toTile y + ts2))
-  (canEnter (toTile x), (toTile y)) and (canEnter (toTile x), (toTile y + TILE_SIDE))
-
-SPEED = 4
-
-setPlayerPos = (p, newx, newy) ->
-  console.warn 'Unit not in space' unless p in map.layers.player[toTile p.x]?[toTile p.y]
-  map.layers.player[toTile p.x][toTile p.y] = (pl for pl in map.layers.player[toTile p.x][toTile p.y] when pl isnt p)
-  p.x = newx
-  p.y = newy
-  ((map.layers.player[toTile p.x] ||= [])[toTile p.y] ||= []).push p
-
-
 update = ->
-  for id, p of players
-    if p.dx or p.dy
-      newx = p.x + p.dx * SPEED
-      newy = p.y + p.dy * SPEED
-
-      newx = p.x unless canEnterXY newx, p.y
-      newy = p.y unless canEnterXY newx, newy
-
-      if newx isnt p.x or newy isnt p.y
-        setPlayerPos p, newx, newy
-
-        p.f ?= 0
-        p.ft ?= 0
-
-        p.ft++
-        if p.ft > 5
-          p.ft = 0
-          p.f++
-
-  for b in bullets
-    b.age++
-    b.x -= 7 * Math.cos b.angle
-    b.y -= 7 * Math.sin b.angle
-
-    tx = toTile b.x
-    ty = toTile b.y + TILE_SIDE/2
-    b.die = true unless canEnter tx, ty
-
-  bullets = (b for b in bullets when b.age < 150 and !b.die)
+  commonUpdate()
 
 frameCount = 0
 lastFrameTime = 0
@@ -192,18 +129,6 @@ runFrame = ->
   update()
   requestAnimationFrame draw
 
-# Sparse layers map from [x,y] -> value
-expandSparseLayer = (sparse, width, height) ->
-  result = []
-
-  for x in [0...width]
-    row = []
-    result.push row
-    for y in [0...height]
-      row[y] = sparse[[x,y]]
-
-  result
-
 ws.onmessage = (msg) ->
   #console.log msg.data
   msg = JSON.parse msg.data
@@ -212,24 +137,21 @@ ws.onmessage = (msg) ->
 
   switch msg.type
     when 'login'
-      map = msg.map
-      map.layers.player = []
-      map.layers.shadow = expandSparseLayer map.layers.shadow, map.width, map.height
-      map.layers.scenery = expandSparseLayer map.layers.scenery, map.width, map.height
+      setMap expandMap msg.gmap
 
       myId = msg.id
-      players = msg.players
-      for id, p of players
-        ((map.layers.player[toTile p.x] ||= [])[toTile p.y] ||= []).push p
+      for id, p of msg.players
+        players[id] = p
+        addPlayerToGrid p for id, p of players
       me = players[myId]
     when 'connected'
       p = players[msg.id] = msg.player
-      ((map.layers.player[toTile p.x] ||= [])[toTile p.y] ||= []).push p
+      addPlayerToGrid p
       console.log 'c', msg.id
     when 'disconnected'
       p = players[msg.id]
+      removePlayerFromGrid p
       delete players[msg.id]
-      map.layers.player[toTile p.x][toTile p.y] = (pl for pl in map.layers.player[toTile p.x][toTile p.y] when pl isnt p)
       console.log 'dc', msg.id
     when 'pos'
       p = players[msg.id]

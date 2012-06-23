@@ -1,5 +1,3 @@
-#http = require 'http'
-
 express = require 'express'
 app = express.createServer()
 
@@ -7,8 +5,6 @@ app.use express.static("#{__dirname}/")
 port = 8123
 
 # How frequently (in ms) should we advance the world
-dt = 16
-snapshotDelay = 5
 bytesSent = bytesReceived = 0
 
 WebSocket = require('ws')
@@ -18,36 +14,14 @@ wss = new WebSocketServer {server: app}
 
 nextId = 1000
 getNextId = -> nextId++
-players = {}
-bullets = []
 
-dist2 = (a, b) ->
-  dx = a.x - b.x
-  dy = a.y - b.y
-  dx * dx + dy * dy
-
-within = (a, b, dist) ->
-  dist2(a, b) < dist * dist
-
-shoot = (id, angle) ->
-  p = players[id]
-  bullets.push {x:p.x, y:p.y, angle:angle, age:0, id}
+# Wheeee!!
+eval (require('fs').readFileSync 'common.js').toString 'utf8'
 
 update = ->
-  for b in bullets
-    b.age++
-    b.x -= 10 * Math.cos b.angle
-    b.y -= 10 * Math.sin b.angle
-
-    # Urgh id is a string.
-    for id, p of players when id isnt "#{b.id}"
-      if within p, b, 35
-        # Hit.
-        console.log 'hit'
-
-  bullets.shift() while bullets.length > 0 and bullets[0].age > 50
-
+  commonUpdate()
 setInterval update, dt
+
 
 width = 64
 height = 64
@@ -59,7 +33,7 @@ genMap = ->
   # dirt mud grass cobble tile
   
   # generate roads (all 4 wide)
-  roads = Math.floor( 8 + Math.random() * 8 )  
+  roads = Math.floor( 8 + Math.random() * 8 )
   for [0...roads]
     x = 0
     y = 0
@@ -131,7 +105,8 @@ genMap = ->
 
   {layers:{ground, shadow, scenery}, width, height}
 
-map = genMap()
+gmap = genMap()
+setMap expandMap gmap
 
 broadcast = (msg, ignored) ->
   s = JSON.stringify msg
@@ -159,14 +134,16 @@ wss.on 'connection', (c) ->
       if state is 'connecting'
         name = msg.name
         players[id] = player = {name, x:Math.random() * 10 * 64, y:Math.random() * 10 * 64, dx:0, dy:0, angle:0}
+        addPlayerToGrid player
         throw new Error unless typeof name is 'string'
         state = 'ok'
-        send {type:'login', map, id, players}
+        send {type:'login', gmap, id, players}
         sendOthers {type:'connected', id, player}
       else
         switch msg.type
           when 'pos'
-            player[k] = msg[k] for k in ['x', 'y', 'dx', 'dy']
+            setPlayerPos player, msg.x, msg.y
+            player[k] = msg[k] for k in ['dx', 'dy']
             sendOthers msg
           when 'angle'
             player.angle = msg.angle
@@ -179,9 +156,10 @@ wss.on 'connection', (c) ->
 
       #p = (players[c.name] ?= {alive:false, x:0, y:0})
     catch e
-      console.log 'invalid JSON', e, msg
+      console.log 'invalid JSON', e, "'#{msg}'"
 
   c.on 'close', ->
+    removePlayerFromGrid player
     delete players[id]
     broadcast {type:'disconnected', id}
 
