@@ -42,6 +42,7 @@ within = (a, b, dist) ->
 
 shoot = (p, angle) ->
   p = players[p] unless typeof p is 'object' # shoot(id, angle) or shoot(player, angle)
+  p.ammo--
   bullets.push {x:p.x, y:p.y, angle:angle, age:0, p}
 
 

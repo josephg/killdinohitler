@@ -128,7 +128,7 @@ wss.on 'connection', (c) ->
 
   c.on 'message', (msg) ->
     bytesReceived += msg.length
-            
+
     console.log msg
     try
       msg = JSON.parse msg
@@ -137,7 +137,17 @@ wss.on 'connection', (c) ->
 
     if state is 'connecting'
       name = msg.name
-      players[id] = player = {name, x:Math.random() * 10 * 64, y:Math.random() * 10 * 64, dx:0, dy:0, angle:0, hp:2, ammo:2}
+      players[id] = player =
+        name:name
+        x:Math.random() * 10 * 64
+        y:Math.random() * 10 * 64
+        dx:0
+        dy:0
+        angle:0
+        hp:2
+        ammo:8
+        weapon:'pistol'
+
       addPlayerToGrid player
       throw new Error unless typeof name is 'string'
       state = 'ok'

@@ -176,9 +176,17 @@ draw = ->
 
     ctx.restore()
 
+    ctx.strokeStyle = 'white'
+
     # Draw health and ammo
+    drawSprite 'heart', 0, 0
+    ctx.fillRect 100, 32 + 28, me.hp * 20, 4
+    ctx.strokeRect 100 - 1, 32 + 28 - 1, me.hp * 20 + 2, 4 + 2
 
-
+    drawSprite me.weapon, 0, 60
+    for i in [0...me.ammo]
+      ctx.fillRect 100 + 12 * i, 60 + 32 + 28, 6, 6
+      ctx.strokeRect 100 + 12 * i - 1, 60 + 32 + 28 - 1, 6 + 2, 6 + 2
 
 runFrame = ->
   setTimeout runFrame, dt
@@ -262,11 +270,19 @@ canvas.onmousedown = (e) ->
   x = e.pageX - canvas.offsetLeft
   y = e.pageY - canvas.offsetTop
 
-  sendPos()
-  angle = me.angle + (Math.random() * 0.2) - 0.1
-  send {type:'attack', angle}
-  shoot me, angle
-  e.preventDefault()
+  return unless me
+
+  if me.weapon is 'knife'
+
+  else if me.ammo > 0
+    sendPos()
+    angle = me.angle + (Math.random() * 0.2) - 0.1
+    send {type:'attack', angle}
+    shoot me, angle
+    e.preventDefault()
+
+    if me.ammo <= 0
+      me.weapon = 'knife'
 
 canvas.oncontextmenu = -> false
 
