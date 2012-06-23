@@ -29,9 +29,9 @@ dist2 = (a, b) ->
 within = (a, b, dist) ->
   dist2(a, b) < dist * dist
 
-shoot = (id) ->
+shoot = (id, angle) ->
   p = players[id]
-  bullets.push {x:p.x, y:p.y, angle:p.angle, age:0, id}
+  bullets.push {x:p.x, y:p.y, angle:angle, age:0, id}
 
 update = ->
   for b in bullets
@@ -173,7 +173,7 @@ wss.on 'connection', (c) ->
             sendOthers msg
           when 'attack'
             sendOthers msg
-            shoot id
+            shoot id, msg.angle
             
       console.log msg
 
