@@ -68,20 +68,28 @@ window.location.hash = username
 requestAnimationFrame = window.requestAnimationFrame or window.mozRequestAnimationFrame or
                         window.webkitRequestAnimationFrame or window.msRequestAnimationFrame
 
-shoot = (p) ->
-  bullets.push {x:p.x, y:p.y, angle:p.angle, age:0}
+shoot = (p, angle) ->
+  bullets.push {x:p.x, y:p.y, angle:angle, age:0, p}
 
-canEnter = (tx, ty, p) ->
+canEnter = (tx, ty) ->
   return false unless 0 <= tx < map.width and 0 <= ty < map.height
   tileplayer = map.layers.player[tx]?[ty]
-  map.layers.scenery[tx][ty] not in ['bot', 'botleft', 'botright', 'topleft', 'topright', 'top'] and (!tileplayer or tileplayer is p)
+  map.layers.scenery[tx][ty] not in ['bot', 'botleft', 'botright']
 
-canEnterXY = (x, y, p) ->
+canEnterXY = (x, y) ->
   ts2 = TILE_SIDE / 2
   #(canEnter (toTile x-ts2), (toTile y-ts2)) and (canEnter (toTile x + ts2), (toTile y + ts2))
-  canEnter (toTile x), (toTile y), p
+  (canEnter (toTile x), (toTile y)) and (canEnter (toTile x), (toTile y + TILE_SIDE))
 
 SPEED = 4
+
+setPlayerPos = (p, newx, newy) ->
+  console.warn 'Unit not in space' unless p in map.layers.player[toTile p.x]?[toTile p.y]
+  map.layers.player[toTile p.x][toTile p.y] = (pl for pl in map.layers.player[toTile p.x][toTile p.y] when pl isnt p)
+  p.x = newx
+  p.y = newy
+  ((map.layers.player[toTile p.x] ||= [])[toTile p.y] ||= []).push p
+
 
 update = ->
   for id, p of players
@@ -89,15 +97,11 @@ update = ->
       newx = p.x + p.dx * SPEED
       newy = p.y + p.dy * SPEED
 
-      newx = p.x unless canEnterXY newx, p.y, p
-      newy = p.y unless canEnterXY newx, newy, p
+      newx = p.x unless canEnterXY newx, p.y
+      newy = p.y unless canEnterXY newx, newy
 
       if newx isnt p.x or newy isnt p.y
-        map.layers.player[toTile p.x][toTile p.y] = null
-        p.x = newx
-        p.y = newy
-        map.layers.player[toTile p.x] ?= []
-        map.layers.player[toTile p.x][toTile p.y] = p
+        setPlayerPos p, newx, newy
 
         p.f ?= 0
         p.ft ?= 0
@@ -109,11 +113,14 @@ update = ->
 
   for b in bullets
     b.age++
-    b.x -= 5 * Math.cos b.angle
-    b.y -= 5 * Math.sin b.angle
+    b.x -= 7 * Math.cos b.angle
+    b.y -= 7 * Math.sin b.angle
 
-  bullets.shift() while bullets.length > 0 and bullets[0].age > 50
+    tx = toTile b.x
+    ty = toTile b.y + TILE_SIDE/2
+    b.die = true unless canEnter tx, ty
 
+  bullets = (b for b in bullets when b.age < 150 and !b.die)
 
 frameCount = 0
 lastFrameTime = 0
@@ -156,8 +163,9 @@ draw = ->
             drawSprite thing, x * TILE_SIDE - 32, y * TILE_SIDE - 32 if thing
 
           if layer is 'scenery'
-            player = map.layers.player[x]?[y]
-            if player
+            ps = map.layers.player[x]?[y]
+            continue unless ps
+            for player in ps
               ctx.fillStyle = 'black'
               ctx.fillText player.name, player.x, player.y - 40
               #ctx.fillStyle = 'red'
@@ -212,23 +220,27 @@ ws.onmessage = (msg) ->
       myId = msg.id
       players = msg.players
       for id, p of players
-        map.layers.player[toTile p.x] ?= []
-        map.layers.player[toTile p.x][toTile p.y] = p
+        ((map.layers.player[toTile p.x] ||= [])[toTile p.y] ||= []).push p
       me = players[myId]
     when 'connected'
-      players[msg.id] = msg.player
+      p = players[msg.id] = msg.player
+      ((map.layers.player[toTile p.x] ||= [])[toTile p.y] ||= []).push p
       console.log 'c', msg.id
     when 'disconnected'
+      p = players[msg.id]
       delete players[msg.id]
+      map.layers.player[toTile p.x][toTile p.y] = (pl for pl in map.layers.player[toTile p.x][toTile p.y] when pl isnt p)
       console.log 'dc', msg.id
     when 'pos'
       p = players[msg.id]
-      p[k] = msg[k] for k in ['x', 'y', 'dx', 'dy']
+      #console.log p, msg.x, msg.y
+      setPlayerPos p, msg.x, msg.y
+      p[k] = msg[k] for k in ['dx', 'dy']
     when 'angle'
       p = players[msg.id]
       p.angle = msg.angle
     when 'attack'
-      shoot players[msg.id]
+      shoot players[msg.id], msg.angle
 
 send = (msg) -> ws.send JSON.stringify msg
 
@@ -272,10 +284,9 @@ canvas.onmousedown = (e) ->
   y = e.pageY - canvas.offsetTop
 
   sendPos()
-  send {type:'attack'}
-
-  shoot me
-
+  angle = me.angle + (Math.random() * 0.2) - 0.1
+  send {type:'attack', angle}
+  shoot me, angle
   e.preventDefault()
 
 canvas.oncontextmenu = -> false
