@@ -73,11 +73,12 @@ shoot = (p) ->
 
 canEnter = (tx, ty) ->
   return false unless 0 <= tx < map.width and 0 <= ty < map.height
-  map.layers.scenery[tx][ty] not in ['bot', 'botleft', 'botright']
+  map.layers.scenery[tx][ty] not in ['bot', 'botleft', 'botright', 'topleft', 'topright', 'top']
 
 canEnterXY = (x, y) ->
   ts2 = TILE_SIDE / 2
-  (canEnter (toTile x-ts2), (toTile y-ts2)) and (canEnter (toTile x + ts2), (toTile y + ts2))
+  #(canEnter (toTile x-ts2), (toTile y-ts2)) and (canEnter (toTile x + ts2), (toTile y + ts2))
+  canEnter (toTile x), (toTile y)
 
 SPEED = 4
 
@@ -158,9 +159,9 @@ draw = ->
       dir = ['left', 'up', 'right', 'down'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
       #console.log player.angle, dir, Math.floor(player.angle + TAU / TAU * 4)
       drawSprite "dude#{dir}", -64, -64, player.f
-      ctx.strokeStyle = 'red'
+      #ctx.strokeStyle = 'red'
       #ctx.drawImage textures.character, -psize/2, -psize/2
-      ctx.strokeRect -psize/2, -psize/2, psize, psize
+      #ctx.strokeRect -psize/2, -psize/2, psize, psize
       ctx.restore()
  
     ctx.fillStyle = 'black'
@@ -188,7 +189,7 @@ expandSparseLayer = (sparse, width, height) ->
   result
 
 ws.onmessage = (msg) ->
-  console.log msg.data
+  #console.log msg.data
   msg = JSON.parse msg.data
 
   return unless me or msg.type is 'login'
@@ -265,6 +266,8 @@ canvas.onmousedown = (e) ->
   shoot me
 
   e.preventDefault()
+
+canvas.oncontextmenu = -> false
 
   #send
   #self.attacking = true
