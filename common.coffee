@@ -41,7 +41,7 @@ within = (a, b, dist) ->
   dist2(a, b) < dist * dist
 
 shoot = (p, angle) ->
-  p = players[id] unless typeof p is 'object' # shoot(id, angle) or shoot(player, angle)
+  p = players[p] unless typeof p is 'object' # shoot(id, angle) or shoot(player, angle)
   bullets.push {x:p.x, y:p.y, angle:angle, age:0, p}
 
 
@@ -69,7 +69,7 @@ setPlayerPos = (p, newx, newy) ->
   addPlayerToGrid p
 
 PSPEED = 4
-BSPEED = 4
+BSPEED = 7
 
 # Shared between server and client
 commonUpdate = ->

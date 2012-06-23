@@ -17,25 +17,87 @@ loadTex = (name) ->
 textures = {}
 textures[name] = loadTex name for name in ['spritesheet']
 
-frames =
-  tile:  [0,0]
-  grass: [1,0]
-  dirt:  [2,0]
-  cobble: [3,0]
+frames = do ->
+  fr = {}
 
-  dudedown: [0,2,3]
-  dudeleft: [3,2,3]
-  dudeup: [6,2,3]
-  duderight: [9,2,3]
-  dudedead: [9,2,2]
+  x = y = 0
+  f = (name, num) ->
+    num ?= 1
+    fr[name] = [x, y, num]
+    x += num
 
-  bot: [0,1]
-  top: [1,1]
-  botleft: [2,1]
-  topleft: [3,1]
-  botright: [4,1]
-  topright: [5,1]
+  line = ->
+    x = 0
+    y++
 
+  f 'tile'
+  f 'grass'
+  f 'dirt'
+  f 'cobble'
+
+  line()
+  line()
+
+  f 'dudedown', 3
+  f 'dudeleft', 3
+  f 'dudeup', 3
+  f 'duderight', 3
+  f 'dudedead', 3
+
+  line()
+
+  f 'dinodown', 3
+  f 'dinoleft', 3
+  f 'dinoup', 3
+  f 'dinoright', 3
+  f 'dinodead', 3
+
+  line()
+
+  f 'health'
+  f 'ammo'
+  f 'pistol'
+  f 'mg'
+  f 'heart'
+  f 'shrub'
+  f 'grenade'
+  f 'rock'
+  f 'jacket'
+  f 'tree'
+
+  f 'crate'
+  f 'barrel'
+  f 'knife'
+
+  line()
+
+  f 'top'
+  f 'topleft'
+  f 'topright'
+  f 'left'
+  f 'right'
+
+  line()
+
+  f 'rfront'
+  f 'rleft'
+  f 'rright'
+  f 'rdoorright'
+  f 'rdoorleft'
+  f 'rwindow'
+  f 'rflag'
+
+  line()
+
+  f 'pfront'
+  f 'pleft'
+  f 'pright'
+  f 'pdoorright'
+  f 'pdoorleft'
+  f 'pwindow'
+  f 'pflag'
+
+  fr
 
 drawSprite = (name, x, y, a) ->
   f = frames[name]
@@ -105,23 +167,17 @@ draw = ->
             for player in ps
               ctx.fillStyle = 'black'
               ctx.fillText player.name, player.x, player.y - 40
-              #ctx.fillStyle = 'red'
-              ctx.save()
-              ctx.translate player.x, player.y
-              #ctx.rotate player.angle
               dir = ['left', 'up', 'right', 'down'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
-              #console.log player.angle, dir, Math.floor(player.angle + TAU / TAU * 4)
-              drawSprite "dude#{dir}", -64, -64, player.f
-              #ctx.strokeStyle = 'red'
-              #ctx.drawImage textures.character, -psize/2, -psize/2
-              #ctx.strokeRect -psize/2, -psize/2, psize, psize
-              ctx.restore()
+              drawSprite "dude#{dir}", player.x-64, player.y-64, player.f
  
     ctx.fillStyle = 'black'
     for b in bullets
       ctx.fillRect b.x - 5, b.y - 5, 10, 10
 
     ctx.restore()
+
+    # Draw health and ammo
+
 
 
 runFrame = ->
@@ -164,7 +220,8 @@ ws.onmessage = (msg) ->
     when 'attack'
       shoot players[msg.id], msg.angle
 
-send = (msg) -> ws.send JSON.stringify msg
+send = (msg) ->
+  ws.send JSON.stringify msg
 
 rateLimit = (fn) ->
   queuedMessage = false

@@ -128,35 +128,35 @@ wss.on 'connection', (c) ->
 
   c.on 'message', (msg) ->
     bytesReceived += msg.length
+            
+    console.log msg
     try
       msg = JSON.parse msg
-
-      if state is 'connecting'
-        name = msg.name
-        players[id] = player = {name, x:Math.random() * 10 * 64, y:Math.random() * 10 * 64, dx:0, dy:0, angle:0}
-        addPlayerToGrid player
-        throw new Error unless typeof name is 'string'
-        state = 'ok'
-        send {type:'login', gmap, id, players}
-        sendOthers {type:'connected', id, player}
-      else
-        switch msg.type
-          when 'pos'
-            setPlayerPos player, msg.x, msg.y
-            player[k] = msg[k] for k in ['dx', 'dy']
-            sendOthers msg
-          when 'angle'
-            player.angle = msg.angle
-            sendOthers msg
-          when 'attack'
-            sendOthers msg
-            shoot id, msg.angle
-            
-      console.log msg
-
-      #p = (players[c.name] ?= {alive:false, x:0, y:0})
     catch e
       console.log 'invalid JSON', e, "'#{msg}'"
+
+    if state is 'connecting'
+      name = msg.name
+      players[id] = player = {name, x:Math.random() * 10 * 64, y:Math.random() * 10 * 64, dx:0, dy:0, angle:0, hp:2, ammo:2}
+      addPlayerToGrid player
+      throw new Error unless typeof name is 'string'
+      state = 'ok'
+      send {type:'login', gmap, id, players}
+      sendOthers {type:'connected', id, player}
+    else
+      switch msg.type
+        when 'pos'
+          setPlayerPos player, msg.x, msg.y
+          player[k] = msg[k] for k in ['dx', 'dy']
+          sendOthers msg
+        when 'angle'
+          player.angle = msg.angle
+          sendOthers msg
+        when 'attack'
+          sendOthers msg
+          shoot id, msg.angle
+
+      #p = (players[c.name] ?= {alive:false, x:0, y:0})
 
   c.on 'close', ->
     removePlayerFromGrid player
