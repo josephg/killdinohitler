@@ -53,47 +53,65 @@ setInterval update, dt
 
 width = 64
 height = 64
+minRoads = 10
+maxRoads = 20
 genMap = ->
   ground = for x in [0...width]
     for y in [0...height]
-      r = Math.random()
-      if r < 0.2
-        'tile'
-      else if r < 0.4
-        'grass'
-      else if r < 0.6
-        'dirt'
-      else
-        'cobble'
-      #else
+      'dirt'
+      
+  roads = Math.floor( minRoads + Math.random() * (maxRoads - minRoads) )
+  
+  for [0...roads]
+    x = 0
+    y = 0
+    r = Math.random()
+    if r < 0.5
+      x = Math.floor( Math.random() * width )
+      for y in [0...height]
+        ground[x][y] = 'cobble'
+    else
+      y = Math.floor( Math.random() * height )
+      for x in [0...width]
+        ground[x][y] = 'cobble'
+    #  r = Math.random()
+     # if r < 0.2
+     #   'tile'
+    #  else if r < 0.4
+     #   'grass'
+    #  else if r < 0.6
+     #   'dirt'
+     # else
+     #   'cobble'
+      # else
       #  'mud'
 
-  for x in [0...10]
-    for y in [0...10]
-      ground[x][y] = 'tile'
+#  for x in [0...10]
+ #   for y in [0...10]
+#      ground[x][y] = 'tile'
 
-  for x in [10...20]
-    for y in [0...10]
-      ground[x][y] = 'grass'
+ # for x in [10...20]
+ #   for y in [0...10]
+ #     ground[x][y] = 'grass'
 
-  for x in [20...30]
-    for y in [0...10]
-      ground[x][y] = 'dirt'
+#  for x in [20...30]
+#    for y in [0...10]
+ #     ground[x][y] = 'dirt'
 
-  for x in [0...10]
-    for y in [10...20]
-      ground[x][y] = 'cobble'
+ # for x in [0...10]
+ #   for y in [10...20]
+ #     ground[x][y] = 'cobble'
 
   shadow = {}
   scenery = {}
 
-  scenery[[4,9]] = 'topleft'
-  scenery[[4,10]] = 'botleft'
-  for x in [5..15]
-    scenery[[x,9]] = 'top'
-    scenery[[x,10]] = 'bot'
-  scenery[[16,9]] = 'topright'
-  scenery[[16,10]] = 'botright'
+ # scenery[[4,9]] = 'topleft'
+ # scenery[[4,10]] = 'botleft'
+#  for x in [5..15]
+ #   scenery[[x,9]] = 'top'
+ #   scenery[[x,10]] = 'bot'
+ # scenery[[16,9]] = 'topright'
+#  scenery[[16,10]] = 'botright'
 
   {layers:{ground, shadow, scenery}, width, height}
 
