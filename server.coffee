@@ -18,8 +18,20 @@ getNextId = -> nextId++
 # Wheeee!!
 eval (require('fs').readFileSync 'common.js').toString 'utf8'
 
+broadcast = (msg, ignored) ->
+  s = JSON.stringify msg
+  for cc in wss.clients when cc isnt ignored and cc.readyState is WebSocket.OPEN
+    bytesSent += s.length
+    cc.send s
+
+gotHit = (id, b) ->
+  p = players[id]
+  if p.hp > 0
+    p.hp--
+    broadcast {type:'gothit', id}
+
 update = ->
-  commonUpdate()
+  commonUpdate gotHit
 setInterval update, dt
 
 
@@ -108,11 +120,17 @@ genMap = ->
 gmap = genMap()
 setMap expandMap gmap
 
-broadcast = (msg, ignored) ->
-  s = JSON.stringify msg
-  for cc in wss.clients when cc isnt ignored and cc.readyState is WebSocket.OPEN
-    bytesSent += s.length
-    cc.send s
+players[getNextId()] =
+  name:'herpderp'
+  x:100
+  y:100
+  dx:0
+  dy:0
+  angle:0
+  hp:2
+  ammo:8
+  weapon:'pistol'
+
 
 wss.on 'connection', (c) ->
   id = getNextId()

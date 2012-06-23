@@ -73,7 +73,7 @@ PSPEED = 4
 BSPEED = 7
 
 # Shared between server and client
-commonUpdate = ->
+commonUpdate = (gotHit) ->
   for id, p of players
     if p.dx or p.dy
       newx = p.x + p.dx * PSPEED
@@ -101,6 +101,12 @@ commonUpdate = ->
     tx = toTile b.x
     ty = toTile b.y + TILE_SIDE/2
     b.die = true unless canEnter tx, ty
+
+    for id, p of players when b.p isnt p
+      if within b, p, 30
+        b.die = true
+
+        gotHit? id, b
 
   bullets = (b for b in bullets when b.age < 150 and !b.die)
 

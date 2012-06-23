@@ -42,7 +42,7 @@ frames = do ->
   f 'dudeleft', 3
   f 'dudeup', 3
   f 'duderight', 3
-  f 'dudedead', 3
+  f 'dudedead' #, 3  dodgy
 
   line()
 
@@ -168,7 +168,8 @@ draw = ->
               ctx.fillStyle = 'black'
               ctx.fillText player.name, player.x, player.y - 40
               dir = ['left', 'up', 'right', 'down'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
-              drawSprite "dude#{dir}", player.x-64, player.y-64, player.f
+              sprite = if player.hp then "dude#{dir}" else 'dudedead'
+              drawSprite sprite, player.x-64, player.y-64, player.f
  
     ctx.fillStyle = 'black'
     for b in bullets
@@ -227,6 +228,9 @@ ws.onmessage = (msg) ->
       p.angle = msg.angle
     when 'attack'
       shoot players[msg.id], msg.angle
+    when 'gothit'
+      {id} = msg
+      players[id].hp--
 
 send = (msg) ->
   ws.send JSON.stringify msg
@@ -270,7 +274,7 @@ canvas.onmousedown = (e) ->
   x = e.pageX - canvas.offsetLeft
   y = e.pageY - canvas.offsetTop
 
-  return unless me
+  return unless me and me.hp > 0
 
   if me.weapon is 'knife'
 
@@ -298,7 +302,7 @@ keys =
 
 pressed = {left:0, right:0, up:0, down:0}
 updateD = ->
-  return unless me
+  return unless me and me.hp > 0
   olddx = me.dx
   olddy = me.dy
 
