@@ -45,76 +45,91 @@ update = ->
         # Hit.
         console.log 'hit'
 
-
-
   bullets.shift() while bullets.length > 0 and bullets[0].age > 50
 
 setInterval update, dt
 
 width = 64
 height = 64
-minRoads = 10
-maxRoads = 20
+
 genMap = ->
   ground = for x in [0...width]
     for y in [0...height]
       'dirt'
-      
-  roads = Math.floor( minRoads + Math.random() * (maxRoads - minRoads) )
+  # dirt mud grass cobble tile
   
+  # generate roads (all 4 wide)
+  roads = Math.floor( 8 + Math.random() * 8 )  
   for [0...roads]
     x = 0
     y = 0
-    r = Math.random()
-    if r < 0.5
+
+    # 0 = south, 1 = east, 2 = north, 3 = west
+    direction = if Math.random() < 0.5 then 1 else 0
+    
+    # start north to south or west to east
+    if direction is 0
       x = Math.floor( Math.random() * width )
-      for y in [0...height]
-        ground[x][y] = 'cobble'
     else
       y = Math.floor( Math.random() * height )
-      for x in [0...width]
-        ground[x][y] = 'cobble'
-    #  r = Math.random()
-     # if r < 0.2
-     #   'tile'
-    #  else if r < 0.4
-     #   'grass'
-    #  else if r < 0.6
-     #   'dirt'
-     # else
-     #   'cobble'
-      # else
-      #  'mud'
-
-#  for x in [0...10]
- #   for y in [0...10]
-#      ground[x][y] = 'tile'
-
- # for x in [10...20]
- #   for y in [0...10]
- #     ground[x][y] = 'grass'
-
-#  for x in [20...30]
-#    for y in [0...10]
- #     ground[x][y] = 'dirt'
-
- # for x in [0...10]
- #   for y in [10...20]
- #     ground[x][y] = 'cobble'
+    
+      # create road until it goes off map
+    while (0 <= x < width) and (0 <= y < height)
+      # thickness for road
+      for i in [0..2]
+        switch direction
+          when 0, 2
+            ground[x + i][y] = 'cobble' if ((x + i) < width)
+          when 1, 3
+            ground[x][y + i] = 'cobble' if ((y + i) < height)
+      # continue along road      
+      switch direction
+        when 0
+          ++y
+        when 1
+          ++x
+        when 2
+          --y
+        when 3
+          --x
 
   shadow = {}
+  
+  # generate scenery between roads
   scenery = {}
-
- # scenery[[4,9]] = 'topleft'
- # scenery[[4,10]] = 'botleft'
-#  for x in [5..15]
- #   scenery[[x,9]] = 'top'
- #   scenery[[x,10]] = 'bot'
- # scenery[[16,9]] = 'topright'
-#  scenery[[16,10]] = 'botright'
+  
+  drawBuilding = (x, y, w, h) ->
+    scenery[[x,y]] = 'topleft'
+    scenery[[x+w-1,y]] = 'topright'
+    scenery[[x+w-1,y+h-1]] = 'botRight'
+    scenery[[x.y+h-1]] = 'botLeft'
+  
+  ###
+  buildingWidth = 0
+  buildingHeight = 0
+  buildingX = 0
+  buildingY = 0
+  # building must have at least a width or height of 2
+  for x in [0...width]
+    if ground[x][0] != 'cobble'
+      if buildingWidth == 0
+        buildingX = x
+      ++buildingWidth
+    for y in [0...height]
+      if ground[x][y] != 'cobble'
+        if buildingHeight == 0
+          buildingY = y
+        ++buildingHeight        
+      else
+        if buildingWidth >= 2 and buildingHeight >= 2
+          drawBuilding(buildingX,buildingY,x - buildingX,y - buildingY)
+          buildingX = 0
+          buildingY = 0
+          buildingWidth = 0
+          buildingHeight = 0
+  ###
 
   {layers:{ground, shadow, scenery}, width, height}
-
 
 map = genMap()
 
