@@ -31,8 +31,8 @@ expandSparseLayer = (sparse, width, height) ->
 expandMap = (gmap) ->
   m = {width:gmap.width, height:gmap.height, layers:{ground:gmap.layers.ground}}
   m.layers.player = []
-  m.layers.shadow = expandSparseLayer gmap.layers.shadow, gmap.width, gmap.height
   m.layers.scenery = expandSparseLayer gmap.layers.scenery, gmap.width, gmap.height
+  m.layers.pickup = expandSparseLayer gmap.layers.pickup, gmap.width, gmap.height
   m
 
 dist2 = (a, b) ->
@@ -92,8 +92,9 @@ canEnterXY = (x, y) ->
 # Can a player enter the given space
 canEnter = (x, y) ->
   ts2 = TILE_SIDE / 2
+  slop = 4
   #(canEnter (toTile x), (toTile y))# and (canEnter (toTile x), (toTile y + TILE_SIDE))
-  (canEnterXY x-ts2, y) and (canEnterXY x+ts2, y) and (canEnterXY x-ts2, y+ts2) and (canEnterXY x+ts2, y+ts2)
+  (canEnterXY x-ts2+slop, y+slop) and (canEnterXY x+ts2-slop, y+slop) and (canEnterXY x-ts2+slop, y+ts2-slop) and (canEnterXY x+ts2-slop, y+ts2-slop)
 
 removePlayerFromGrid = (p) ->
   console.warn 'Unit not in space' unless p in map.layers.player[toTile p.x]?[toTile p.y]
@@ -130,6 +131,12 @@ commonUpdate = (gotHit) ->
         if p.ft > 5
           p.ft = 0
           p.f++
+
+    [tx, ty] = [toTile(p.x), toTile(p.y)]
+    if map.layers.pickup[tx]?[ty] is 'ammo'
+      p.weapon = 'pistol' if p.weapon is 'knife'
+      p.ammo += 2
+      map.layers.pickup[tx]?[ty] = null
 
   for b in bullets
     b.age++

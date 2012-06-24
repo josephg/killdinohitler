@@ -118,7 +118,7 @@ genMap = ->
         when 3
           --x
 
-  shadow = {}
+  pickup = {}
 
   scenery = {}
   
@@ -270,6 +270,10 @@ genMap = ->
             ++x
       ++x
     ++y
+
+  for x in [0...width]
+    for y in [0...height] when !scenery[[x,y]] and ground[x][y] is 'tile'
+      pickup[[x,y]] = 'ammo' if Math.random() < 0.05
     
   cobbleCount = 0
   for x in [0...width]
@@ -277,7 +281,7 @@ genMap = ->
       if ground[x][y] == 'cobble'
         ++cobbleCount
 
-  {layers:{ground, shadow, scenery}, width, height, cobbleCount}
+  {layers:{ground, scenery, pickup}, width, height, cobbleCount}
 
 gmap = genMap()
 setMap expandMap gmap
@@ -294,18 +298,6 @@ spawnLoc = ->
           spawnX = x
           spawnY = y
   [spawnX * TILE_SIDE + TILE_SIDE2, spawnY * TILE_SIDE + TILE_SIDE2]
-
-players[getNextId()] =
-  name:'herpderp'
-  type:'dude'
-  x:100
-  y:100
-  dx:0
-  dy:0
-  angle:0
-  hp:2
-  ammo:8
-  weapon:'pistol'
 
 dinoSpawnLoc = ->
   spawnX = Math.floor( Math.random() * width )
@@ -332,7 +324,7 @@ do ->
       hp:2
       ammo:8
       weapon:'pistol'
-      speed:3
+      speed:2
     addPlayerToGrid d
 
 wss.on 'connection', (c) ->

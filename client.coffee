@@ -182,9 +182,10 @@ draw = ->
     fovdir = ['east', 'southeast', 'south', 'southwest', 'west', 'northwest', 'north', 'northeast'][Math.floor((me.angle + TAU/8 + TAU) / TAU * 8) % 8]
     fov.beam fovsettings, null, toTile(me.x), toTile(me.y), 6, fovdir, 1.5
 
-    for layer in ['ground', 'shadow', 'scenery']
+    for layer in ['ground', 'scenery', 'pickup']
       for y in [toTile(top)..toTile(bot)]
         for x in [toTile(left)..toTile(right)]
+          continue if layer is 'pickup' and !visible[[x,y]]
           ctx.globalAlpha = (if visible[[x,y]] then 1 else 0.5)
           #if layer in ['player', 'shadow', 'scenery'] # Sparse layers
           #  thing = map.layers[layer][[x,y]]
