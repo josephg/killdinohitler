@@ -33,6 +33,19 @@ gotHit = (id, b) ->
       p.dx = p.dy = 0
       broadcast {type:'pos', id, x:p.x, y:p.y, dx:p.dx, dy:p.dy}
       
+closestPlayer = (x,y,range) ->
+  closest = -1
+  dist = 9999999
+  
+  for id, p of players
+    if id >= DINO_COUNT
+      d = Math.abs( p.x - x ) + Math.abs( p.y - y )
+      if d < dist
+        dist = d
+        closest = id
+        
+  closest
+    
 updateDinos = ->
   if players?
       for id in [0...DINO_COUNT]
@@ -40,18 +53,26 @@ updateDinos = ->
           dino = players[id]
           changed = false
           if dino.hp > 0
-            if Math.random() < 0.02
-              changeDir = Math.random()
-              changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
-              if changeDir != dino.dx
-                dino.dx = changeDir
-                changed = true
-            if Math.random() < 0.02
-              changeDir = Math.random()
-              changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
-              if changeDir != dino.dy
-                dino.dy = changeDir
-                changed = true
+            pid = closestPlayer( dino.x, dino.y, 5 * 96 )
+            if pid >= 0
+              # move towards player
+              dino.dx = if players[pid].x > dino.x then 1 else if players[pid.x] < dino.x then -1 else 0
+              dino.dy = if players[pid].y > dino.y then 1 else if players[pid.y] < dino.y then -1 else 0
+              console.log 'chasing player'
+              changed = true
+            else
+              if Math.random() < 0.02
+                changeDir = Math.random()
+                changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
+                if changeDir != dino.dx
+                  dino.dx = changeDir
+                  changed = true
+              if Math.random() < 0.02
+                changeDir = Math.random()
+                changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
+                if changeDir != dino.dy
+                  dino.dy = changeDir
+                  changed = true
           if changed
             broadcast { id, type:'pos', x:dino.x, y:dino.y, dx:dino.dx, dy:dino.dy }
 
@@ -64,8 +85,7 @@ update = ->
         p.spawnTimer = 0
         p.hp = 2
         [x,y] = spawnLoc()
-        p.x = x
-        p.y = y
+        setPlayerPos p, x, y
         broadcast { id, type:'respawn', hp:p.hp, x, y }
         
   
