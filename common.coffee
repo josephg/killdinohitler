@@ -130,16 +130,23 @@ commonUpdate = (gotHit) ->
 
   for b in bullets
     b.age++
-    b.x += BSPEED * Math.cos b.angle
-    b.y += BSPEED * Math.sin b.angle
 
-    b.die = true unless canEnter b.x, b.y + TILE_SIDE/2
+    # We'll move the bullet a bit at a time to make sure collision detection is right
+    iterations = 3
+    s = BSPEED/iterations
+    for i in [0...iterations]
+      b.x += s * Math.cos b.angle
+      b.y += s * Math.sin b.angle
 
-    for id, p of players when b.p isnt p
-      if within b, p, 30
+      unless canEnter b.x, b.y + TILE_SIDE/2
         b.die = true
+        break
 
-        gotHit? id, b
+      for id, p of players when b.p isnt p
+        if within b, p, 30
+          b.die = true
+
+          gotHit? id, b
 
   bullets = (b for b in bullets when b.age < 150 and !b.die)
 
