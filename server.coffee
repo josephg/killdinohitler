@@ -36,16 +36,26 @@ gotHit = (id, b) ->
 update = ->
   commonUpdate gotHit
   # update dinos
-  ### if players?
+  if players?
     for id in [0...DINO_COUNT]
       if players[id]?
         dino = players[id]
+        changed = false
         if dino.hp > 0
           if Math.random() < 0.02
-            dino.dx *= -1
+            changeDir = Math.random()
+            changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
+            if changeDir != dino.dx
+              dino.dx = changeDir
+              changed = true
           if Math.random() < 0.02
-            dino.dy *= -1
-          setPlayerPos dino, dino.x + dino.dx, dino.y + dino.dy###
+            changeDir = Math.random()
+            changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
+            if changeDir != dino.dy
+              dino.dy = changeDir
+              changed = true
+        if changed
+          broadcast { id, type:'pos', x:dino.x, y:dino.y, dx:dino.dx, dy:dino.dy }
   
 setInterval update, dt
 
@@ -238,10 +248,10 @@ genMap = ->
   for x in [1...width]
     for y in [0...height-1]
       if scenery[[x-1,y]]? and scenery[[x,y]]? and scenery[[x+1,y]]? and scenery[[x+2,y]]? and scenery[[x,y-1]]? == false and scenery[[x+1,y-1]]? == false
-        if scenery[[x-1,y]] != 'rdooropen' and scenery[[x,y]] == 'rfront' and scenery[[x+1,y]] == 'rfront' and scenery[[x+2,y]] == 'rfront' and Math.random() < 0.1
+        if scenery[[x-1,y]] != 'rdooropen' and scenery[[x,y]] == 'rfront' and scenery[[x+1,y]] == 'rfront' and scenery[[x+2,y]] == 'rfront' and Math.random() < 0.2
           scenery[[x,y]] = 'ldooropen'
           scenery[[x+1,y]] = 'rdooropen'
-        else scenery[[x-1,y]] != 'rdooropen' and if scenery[[x,y]] == 'pfront' and scenery[[x+1,y]] == 'pfront'and scenery[[x+2,y]] == 'pfront'  and Math.random() < 0.1
+        else scenery[[x-1,y]] != 'rdooropen' and if scenery[[x,y]] == 'pfront' and scenery[[x+1,y]] == 'pfront'and scenery[[x+2,y]] == 'pfront'  and Math.random() < 0.2
           scenery[[x,y]] = 'ldooropen'
           scenery[[x+1,y]] = 'rdooropen'
     
@@ -308,7 +318,7 @@ dinoSpawnLoc = ->
 
 do ->
   for id in [0...DINO_COUNT]
-    [x,y] = dinoSpawnLoc()
+    [x,y] = spawnLoc()
     dirx = Math.random()
     diry = Math.random()
     d = players[id] =
