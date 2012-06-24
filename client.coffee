@@ -76,6 +76,10 @@ frames = do ->
   f 'topright'
   f 'left'
   f 'right'
+  f 'leftdoor'
+  f 'rightdoor'
+  f 'ldooropen'
+  f 'rdooropen'
 
   line()
 

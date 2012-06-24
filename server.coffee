@@ -104,8 +104,8 @@ genMap = ->
     ground[x][y] = 'tile'
     scenery[[x,y]] = tile
   #  door = Math.random() > 0.95
-  #  if door and (tile == 'bot' or tile == 'left' or tile == 'right')
-   #   scenery[[x,y]] = null
+  #  if door and (tile == 'rfront' or tile == 'pfront')
+  #    scenery[[x,y]] = null
     
   placeBuilding = (x,y) ->
     if canBuild(x,y)
@@ -157,11 +157,29 @@ genMap = ->
           build('pright',x,y)
         else
           build('rfront',x,y)
+      #   X
+      # 0 ? 0
+      #   0
       else if canBuild(x-1,y) and canBuild(x+1,y) and canBuild(x,y-1) == false and canBuild(x,y+1)
+        #   X
+        # 0 ? 0
+        # 0 0 X
+        if canBuild(x+1,y+1) == false and canBuild(x-1,y+1)
+          build('topright',x,y)
+        #   X
+        # 0 ? 0
+        #   0 X
         if canBuild(x+1,y+1) == false
           build('topright',x,y)
-        if canBuild(x-1,y+1) == false
+        #   X
+        # 0 ? 0
+        # X 0 0
+        if canBuild(x-1,y+1) == false and canBuild(x-1,y+1)
           build('topleft',x,y)
+        #   X
+        # 0 ? 0
+        #   0
+        #   0
         else if canBuild(x,y+2)
           build('pfront',x,y)
         else
@@ -194,8 +212,7 @@ genMap = ->
   
   for x in [0...width]
     for y in [0...height]
-      placeBuilding(x,y)        
-  
+      placeBuilding(x,y)          
   
   for x in [0...width]
     for y in [0...height]
@@ -205,7 +222,17 @@ genMap = ->
         ground[x][y] = 'grass'
         if Math.random() < 0.25
           scenery[[x,y]] = 'shrub'
-       
+    
+  for x in [1...width]
+    for y in [0...height-1]
+      if scenery[[x-1,y]]? and scenery[[x,y]]? and scenery[[x+1,y]]? and scenery[[x+2,y]]?
+        if scenery[[x-1,y]] != 'rdooropen' and scenery[[x,y]] == 'rfront' and scenery[[x+1,y]] == 'rfront' and scenery[[x+2,y]] == 'rfront' and Math.random() < 0.1
+          scenery[[x,y]] = 'ldooropen'
+          scenery[[x+1,y]] = 'rdooropen'
+        else scenery[[x-1,y]] != 'rdooropen' and if scenery[[x,y]] == 'pfront' and scenery[[x+1,y]] == 'pfront'and scenery[[x+2,y]] == 'pfront'  and Math.random() < 0.1
+          scenery[[x,y]] = 'ldooropen'
+          scenery[[x+1,y]] = 'rdooropen'
+    
   y = 0
   while y < height
     x = 0
