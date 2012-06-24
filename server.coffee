@@ -74,8 +74,6 @@ updateDinos = ->
               if Math.abs( players[pid].x - dino.x ) < 64 and Math.abs( players[pid].y - dino.y ) < 64 and dino.attackTimer >= 60
                 dino.attackTimer = 0
                 gotHit( pid )
-              #  players[pid].hp--
-              #  broadcast { id:pid, type:'gothit' }
             else
               # randomly change direction
               if Math.random() < 0.02
@@ -101,13 +99,12 @@ update = ->
       if ++p.spawnTimer > (6*60)
         p.spawnTimer = 0
         p.hp = 2
+        p.ammo = 4
         [x,y] = spawnLoc()
         setPlayerPos p, x, y
-        broadcast { id, type:'respawn', hp:p.hp, x, y }
-        
+        broadcast { id, type:'respawn', hp:p.hp, x, y }        
   
 setInterval update, dt
-
 
 width = 64
 height = 64
@@ -245,7 +242,7 @@ genMap = ->
         #   X
         # 0 ? 0
         # X 0 0
-        if canBuild(x-1,y+1) == false and canBuild(x-1,y+1)
+        if canBuild(x-1,y+1) == false and canBuild(x+1,y+1)
           build('topleft',x,y)
         #   X
         # 0 ? 0
@@ -378,6 +375,8 @@ do ->
       ammo:8
       weapon:'pistol'
       speed:2
+      kills:0
+      deaths:0
       spawnTimer:0
       attackTimer:60
     addPlayerToGrid d
@@ -420,6 +419,8 @@ wss.on 'connection', (c) ->
           hp:2
           ammo:4
           speed:4
+          kills:0
+          deaths:0
           spawnTimer:0
           weapon:'pistol'
 
