@@ -32,30 +32,42 @@ gotHit = (id, b) ->
     if p.hp is 0
       p.dx = p.dy = 0
       broadcast {type:'pos', id, x:p.x, y:p.y, dx:p.dx, dy:p.dy}
+      
+updateDinos = ->
+  if players?
+      for id in [0...DINO_COUNT]
+        if players[id]?
+          dino = players[id]
+          changed = false
+          if dino.hp > 0
+            if Math.random() < 0.02
+              changeDir = Math.random()
+              changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
+              if changeDir != dino.dx
+                dino.dx = changeDir
+                changed = true
+            if Math.random() < 0.02
+              changeDir = Math.random()
+              changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
+              if changeDir != dino.dy
+                dino.dy = changeDir
+                changed = true
+          if changed
+            broadcast { id, type:'pos', x:dino.x, y:dino.y, dx:dino.dx, dy:dino.dy }
 
 update = ->
   commonUpdate gotHit
-  # update dinos
-  if players?
-    for id in [0...DINO_COUNT]
-      if players[id]?
-        dino = players[id]
-        changed = false
-        if dino.hp > 0
-          if Math.random() < 0.02
-            changeDir = Math.random()
-            changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
-            if changeDir != dino.dx
-              dino.dx = changeDir
-              changed = true
-          if Math.random() < 0.02
-            changeDir = Math.random()
-            changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
-            if changeDir != dino.dy
-              dino.dy = changeDir
-              changed = true
-        if changed
-          broadcast { id, type:'pos', x:dino.x, y:dino.y, dx:dino.dx, dy:dino.dy }
+  updateDinos() 
+  for id, p of players    
+    if p.hp <= 0
+      if ++p.spawnTimer > (6*60)
+        p.spawnTimer = 0
+        p.hp = 2
+        [x,y] = spawnLoc()
+        p.x = x
+        p.y = y
+        broadcast { id, type:'respawn', hp:p.hp, x, y }
+        
   
 setInterval update, dt
 
@@ -306,6 +318,7 @@ players[getNextId()] =
   hp:2
   ammo:8
   weapon:'pistol'
+  spawnTimer:0
 
 dinoSpawnLoc = ->
   spawnX = Math.floor( Math.random() * width )
@@ -333,6 +346,7 @@ do ->
       ammo:8
       weapon:'pistol'
       speed:3
+      spawnTimer:0
     addPlayerToGrid d
 
 wss.on 'connection', (c) ->
@@ -373,6 +387,7 @@ wss.on 'connection', (c) ->
           hp:2
           ammo:8
           speed:4
+          spawnTimer:0
           weapon:'pistol'
 
         addPlayerToGrid player
