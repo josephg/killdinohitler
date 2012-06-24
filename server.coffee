@@ -68,6 +68,20 @@ genMap = ->
             ground[x + i][y] = 'cobble' if ((x + i) < width)
           when 1, 3
             ground[x][y + i] = 'cobble' if ((y + i) < height)
+      
+      # slight chance road turns
+      if Math.random() < 0.1
+        left = Math.random() < 0.5
+        switch direction
+          when 0
+            direction = if left then 1 else 3
+          when 1
+            direction = if left then 2 else 0
+          when 2
+            direction = if left then 3 else 1
+          when 3
+            direction = if left then 0 else 2
+            
       # continue along road      
       switch direction
         when 0
@@ -80,40 +94,92 @@ genMap = ->
           --x
 
   shadow = {}
-  
-  # generate scenery between roads
+
   scenery = {}
   
-  drawBuilding = (x, y, w, h) ->
-    scenery[[x,y]] = 'topleft'
-    scenery[[x+w-1,y]] = 'topright'
-    scenery[[x+w-1,y+h-1]] = 'botRight'
-    scenery[[x.y+h-1]] = 'botLeft'
+  canBuild = (x,y) ->
+    x >= 0 and x < width and y >= 0 and y < height and ground[x][y] != 'cobble' and ground[x][y] != 'grass'
+    
+  build = (tile,x,y) ->
+    ground[x][y] = 'tile'
+    scenery[[x,y]] = tile
+  #  door = Math.random() > 0.95
+  #  if door and (tile == 'bot' or tile == 'left' or tile == 'right')
+   #   scenery[[x,y]] = null
+    
+  placeBuilding = (x,y) ->
+    if canBuild(x,y)
+      #   0
+      # 0 ? 0
+      #   0
+      if canBuild(x-1,y) and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1)
+        # X 0
+        # 0 ? 0
+        # X 0
+        if canBuild(x-1,y-1) == false and canBuild(x-1,y+1) == false
+          build('left',x,y)
+        #   0 X
+        # 0 ? 0
+        #   0 X
+        else if canBuild(x+1,y-1) == false and canBuild(x+1,y+1) == false
+          build('right',x,y)
+        # X 0 X
+        # 0 ? 0
+        #   0 
+        else if canBuild(x-1,y-1) == false or canBuild(x+1,y-1) == false
+          build('pfront',x,y)
+        else
+          ground[x][y] = 'tile'
+      #   0
+      # 0 ? 0
+      #   X
+      else if canBuild(x-1,y) and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1) == false
+        # X 0
+        # 0 ? 0
+        #   X
+        if canBuild(x-1,y-1) == false
+          build('pleft',x,y)
+        #   0 X
+        # 0 ? 0
+        #   X
+        else if canBuild(x+1,y-1) == false
+          build('pright',x,y)
+        else
+          build('rfront',x,y)
+      else if canBuild(x-1,y) and canBuild(x+1,y) and canBuild(x,y-1) == false and canBuild(x,y+1)
+        if canBuild(x+1,y+1) == false
+          build('topright',x,y)
+        if canBuild(x-1,y+1) == false
+          build('topleft',x,y)
+        else if canBuild(x,y+2)
+          build('pfront',x,y)
+        else
+          build('top',x,y)
+      else if canBuild(x-1,y) and canBuild(x+1,y) == false and canBuild(x,y-1) == false and canBuild(x,y+1)
+        build('topright',x,y)
+      else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) == false and canBuild(x,y+1)
+        build('topleft',x,y)
+      else if canBuild(x-1,y) and canBuild(x+1,y) == false and canBuild(x,y-1) and canBuild(x,y+1) == false
+        build('rright',x,y)
+      else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1) == false
+        build('rleft',x,y)
+      else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1)
+        build('left',x,y)
+      else if canBuild(x-1,y) and canBuild(x+1,y) == false and canBuild(x,y-1) and canBuild(x,y+1)
+        build('right',x,y)
   
-  ###
-  buildingWidth = 0
-  buildingHeight = 0
-  buildingX = 0
-  buildingY = 0
-  # building must have at least a width or height of 2
   for x in [0...width]
-    if ground[x][0] != 'cobble'
-      if buildingWidth == 0
-        buildingX = x
-      ++buildingWidth
     for y in [0...height]
-      if ground[x][y] != 'cobble'
-        if buildingHeight == 0
-          buildingY = y
-        ++buildingHeight        
-      else
-        if buildingWidth >= 2 and buildingHeight >= 2
-          drawBuilding(buildingX,buildingY,x - buildingX,y - buildingY)
-          buildingX = 0
-          buildingY = 0
-          buildingWidth = 0
-          buildingHeight = 0
-  ###
+      placeBuilding(x,y)  
+  
+  for x in [0...width]
+    for y in [0...height]
+      if ground[x][y] == 'cobble' and Math.random() < 0.02
+        ground[x][y] = 'dirt'
+      if ground[x][y] == 'dirt'
+        ground[x][y] = 'grass'
+        if Math.random() < 0.05
+          scenery[[x,y]] = 'shrub'
 
   {layers:{ground, shadow, scenery}, width, height}
 
