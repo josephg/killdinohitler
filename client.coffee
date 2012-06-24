@@ -141,6 +141,7 @@ requestAnimationFrame = window.requestAnimationFrame or window.mozRequestAnimati
                         window.webkitRequestAnimationFrame or window.msRequestAnimationFrame
 
 update = ->
+  canvas.focus()
   commonUpdate()
 
 frameCount = 0
@@ -374,11 +375,12 @@ canvas.onmousedown = (e) ->
   return unless me and me.hp > 0
 
   if me.weapon is 'knife'
+    send {type:'attack', angle:me.angle, weapon:'knife'}
 
   else if me.ammo > 0
     sendPos()
     angle = me.angle + (Math.random() * 0.05) - 0.025
-    send {type:'attack', angle}
+    send {type:'attack', angle:me.angle, weapon:me.weapon}
     shoot me, angle
 
     if me.ammo <= 0

@@ -24,7 +24,7 @@ broadcast = (msg, ignored) ->
     bytesSent += s.length
     cc.send s
 
-gotHit = (id, b) ->
+gotHit = (id) ->
   p = players[id]
   if p.hp > 0
     p.hp--
@@ -439,7 +439,20 @@ wss.on 'connection', (c) ->
             sendOthers msg
           when 'attack'
             sendOthers msg
-            shoot id, msg.angle
+            if msg.weapon is 'knife'
+              console.log 'asdfdsfs'
+              sx = player.x + 32 * Math.cos msg.angle
+              sy = player.y + 32 * Math.sin msg.angle
+              console.log msg
+              console.log sx, sy, msg.angle, player.angle
+
+              for id, p of players when p isnt player
+                if within p, {x:sx, y:sy}, 32
+                  console.log 'stab'
+                  gotHit id
+
+            else
+              shoot id, msg.angle
 
     catch e
       console.log "Error: #{e.message} #{e.stack}"

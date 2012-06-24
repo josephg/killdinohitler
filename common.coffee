@@ -139,7 +139,7 @@ commonUpdate = (gotHit) ->
           p.f++
 
     [tx, ty] = [toTile(p.x), toTile(p.y)]
-    if p.type isnt 'dino'
+    if p.type isnt 'dino' and p.hp > 0
       if map.layers.pickup[tx]?[ty] is 'ammo'
         p.weapon = 'pistol' if p.weapon is 'knife'
         p.ammo += 3
