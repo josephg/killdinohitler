@@ -199,6 +199,8 @@ draw = ->
     ctx.lineWidth = 5
     #ctx.lineCap = 'round'
     for b in bullets
+      [tx, ty] = [toTile(b.x), toTile(b.y)]
+      continue unless visible[[tx,ty]]
       ctx.beginPath()
       [x1,y1] = [b.x, b.y]
       [x2,y2] = [b.x + BSPEED * Math.cos(b.angle), b.y + BSPEED * Math.sin b.angle]
