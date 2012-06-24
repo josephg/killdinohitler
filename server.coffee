@@ -41,15 +41,16 @@ gotHit = (id, b) ->
       
 closestPlayer = (x,y,range) ->
   closest = -1
-  dist = 9999999
-  
+  dist = 99999  
   for id, p of players
     if id >= DINO_COUNT
-      d = Math.abs( p.x - x ) + Math.abs( p.y - y )
-      if d < dist
+      xabs = Math.abs( p.x - x )
+      yabs = Math.abs( p.y - y )
+      d = xabs + yabs
+      max = if xabs > yabs then xabs else yabs
+      if max < range and d < dist
         dist = d
-        closest = id
-        
+        closest = id        
   closest
     
 updateDinos = ->
@@ -59,13 +60,14 @@ updateDinos = ->
           dino = players[id]
           changed = false
           if dino.hp > 0
-            pid = closestPlayer( dino.x, dino.y, 5 * 96 )
+            pid = closestPlayer( dino.x, dino.y, 4 * 64 )
             if pid >= 0
               # move towards player
-              dino.dx = if players[pid].x > dino.x then 1 else if players[pid.x] < dino.x then -1 else 0
-              dino.dy = if players[pid].y > dino.y then 1 else if players[pid.y] < dino.y then -1 else 0
+              dino.dx = if players[pid].x > dino.x then 1 else if players[pid].x < dino.x then -1 else 0
+              dino.dy = if players[pid].y > dino.y then 1 else if players[pid].y < dino.y then -1 else 0
               changed = true
             else
+              # randomly change direction
               if Math.random() < 0.02
                 changeDir = Math.random()
                 changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
