@@ -2,6 +2,7 @@ TAU = Math.PI * 2
 
 
 TILE_SIDE = 64
+TILE_SIDE2 = TILE_SIDE/2
 dt = 16
 
 toTile = (x) -> Math.floor(x / TILE_SIDE)
@@ -45,16 +46,50 @@ shoot = (p, angle) ->
   p.ammo--
   bullets.push {x:p.x, y:p.y, angle:angle, age:0, p}
 
+collision =
+  'rock':true
+  'tree':true
+  'barrel':true
+  'crate':true
 
-canEnter = (tx, ty) ->
-  return false unless 0 <= tx < map.width and 0 <= ty < map.height
-  tileplayer = map.layers.player[tx]?[ty]
-  map.layers.scenery[tx][ty] not in ['bot', 'botleft', 'botright']
+  'top': (x,y) -> y > 0
+  'topleft': (x,y) -> x > 0 and y > 0
+  'topright': (x, y) -> x < 0 and y > 0
+  'left': (x, y) ->
+    x > 0
+  'right': (x, y) ->
+    x < 0
 
+  'rfront': true
+  'rleft': (x, y) -> x > 0
+  'rright': (x, y) -> x < 0
+  'rwindow': true
+  'rflag': true
+
+  'pfront': true
+  'pleft': (x, y) -> x > 0
+  'pright': (x, y) -> x < 0
+  'pwindow': true
+  'pflag': true
+
+# Is the specified point enterable?
 canEnterXY = (x, y) ->
+  [tx, ty] = [toTile(x), toTile(y)]
+  return false unless 0 <= tx < map.width and 0 <= ty < map.height
+
+  scenery = map.layers.scenery[tx][ty]
+  c = collision[scenery]
+
+  return true unless c
+  return false if c is true
+  # c is a function
+  return !c(x - tx * TILE_SIDE - TILE_SIDE2, y - ty * TILE_SIDE - TILE_SIDE2)
+
+# Can a player enter the given space
+canEnter = (x, y) ->
   ts2 = TILE_SIDE / 2
-  #(canEnter (toTile x-ts2), (toTile y-ts2)) and (canEnter (toTile x + ts2), (toTile y + ts2))
-  (canEnter (toTile x), (toTile y)) and (canEnter (toTile x), (toTile y + TILE_SIDE))
+  #(canEnter (toTile x), (toTile y))# and (canEnter (toTile x), (toTile y + TILE_SIDE))
+  (canEnterXY x-ts2, y) and (canEnterXY x+ts2, y) and (canEnterXY x-ts2, y+ts2) and (canEnterXY x+ts2, y+ts2)
 
 removePlayerFromGrid = (p) ->
   console.warn 'Unit not in space' unless p in map.layers.player[toTile p.x]?[toTile p.y]
@@ -79,8 +114,8 @@ commonUpdate = (gotHit) ->
       newx = p.x + p.dx * PSPEED
       newy = p.y + p.dy * PSPEED
 
-      newx = p.x unless canEnterXY newx, p.y
-      newy = p.y unless canEnterXY newx, newy
+      newx = p.x unless canEnter newx, p.y
+      newy = p.y unless canEnter newx, newy
 
       if newx isnt p.x or newy isnt p.y
         setPlayerPos p, newx, newy
@@ -98,9 +133,7 @@ commonUpdate = (gotHit) ->
     b.x += BSPEED * Math.cos b.angle
     b.y += BSPEED * Math.sin b.angle
 
-    tx = toTile b.x
-    ty = toTile b.y + TILE_SIDE/2
-    b.die = true unless canEnter tx, ty
+    b.die = true unless canEnter b.x, b.y + TILE_SIDE/2
 
     for id, p of players when b.p isnt p
       if within b, p, 30

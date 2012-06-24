@@ -170,17 +170,19 @@ draw = ->
               dir = ['right', 'down', 'left', 'up'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
               sprite = if player.hp then "dude#{dir}" else 'dudedead'
               drawSprite sprite, player.x-64, player.y-64, player.f
+              #ctx.strokeStyle = 'red'
+              #ctx.strokeRect player.x - TILE_SIDE2, player.y, TILE_SIDE, TILE_SIDE2
  
     # Draw bullets
     ctx.strokeStyle = 'black'
     ctx.lineWidth = 5
-    ctx.lineCap = 'round'
+    #ctx.lineCap = 'round'
     for b in bullets
       ctx.beginPath()
       [x1,y1] = [b.x, b.y]
-      [x2,y2] = [b.x + 100 * Math.cos(b.angle), b.y + 100 * Math.sin b.angle]
+      [x2,y2] = [b.x + BSPEED * Math.cos(b.angle), b.y + BSPEED * Math.sin b.angle]
       grad = ctx.createLinearGradient x1, y1, x2, y2
-      grad.addColorStop 0, 'rgba(0,0,0,0)'
+      grad.addColorStop 0, 'rgba(0,0,0,0.5)'
       grad.addColorStop 1, 'black'
 
       ctx.strokeStyle = grad
