@@ -42,8 +42,11 @@ gotHit = (id, b) ->
 closestPlayer = (x,y,range) ->
   closest = -1
   dist = 99999  
+  scenery = gmap.layers.scenery
   for id, p of players
-    if id >= DINO_COUNT and p.hp > 0
+    px = toTile(p.x)
+    py = toTile(p.y)
+    if id >= DINO_COUNT and p.hp > 0 and (scenery[[px,py]]? == false or scenery[[px,py]] != 'shrub')
       xabs = Math.abs( p.x - x )
       yabs = Math.abs( p.y - y )
       d = xabs + yabs
