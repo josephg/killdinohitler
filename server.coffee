@@ -32,20 +32,32 @@ gotHit = (id, b) ->
 
 update = ->
   commonUpdate gotHit
+  # update dinos
+  ### if players?
+    for id in [0...DINO_COUNT]
+      if players[id]?
+        dino = players[id]
+        if dino.hp > 0
+          if Math.random() < 0.02
+            dino.dx *= -1
+          if Math.random() < 0.02
+            dino.dy *= -1
+          setPlayerPos dino, dino.x + dino.dx, dino.y + dino.dy###
+  
 setInterval update, dt
 
 
 width = 64
 height = 64
 
-genMap = ->
+genMap = ->  
   ground = for x in [0...width]
     for y in [0...height]
       'dirt'
   # dirt mud grass cobble tile
   
   # generate roads (all 4 wide)
-  roads = Math.floor( 8 + Math.random() * 8 )
+  roads = Math.floor( 10 + Math.random() * 10 )
   for [0...roads]
     x = 0
     y = 0
@@ -103,9 +115,6 @@ genMap = ->
   build = (tile,x,y) ->
     ground[x][y] = 'tile'
     scenery[[x,y]] = tile
-  #  door = Math.random() > 0.95
-  #  if door and (tile == 'bot' or tile == 'left' or tile == 'right')
-   #   scenery[[x,y]] = null
     
   placeBuilding = (x,y) ->
     if canBuild(x,y)
@@ -117,7 +126,10 @@ genMap = ->
         # 0 ? 0
         # X 0
         if canBuild(x-1,y-1) == false and canBuild(x-1,y+1) == false
-          build('left',x,y)
+          if canBuild(x+1,y-1) == false
+            build('topleft',x,y)
+          else
+            build('left',x,y)
         #   0 X
         # 0 ? 0
         #   0 X
@@ -127,9 +139,17 @@ genMap = ->
         # 0 ? 0
         #   0 
         else if canBuild(x-1,y-1) == false or canBuild(x+1,y-1) == false
-          build('pfront',x,y)
+          if canBuild(x+1,y+1) == false
+            build('topright',x,y)
+          else
+            build('pfront',x,y)
         else
-          ground[x][y] = 'tile'
+          if canBuild(x+1,y+1) == false
+            build('rdleft',x,y)
+          else if canBuild(x-1,y+1) == false
+            build('rdright',x,y)
+          else
+            ground[x][y] = 'tile'
       #   0
       # 0 ? 0
       #   X
@@ -146,11 +166,29 @@ genMap = ->
           build('pright',x,y)
         else
           build('rfront',x,y)
+      #   X
+      # 0 ? 0
+      #   0
       else if canBuild(x-1,y) and canBuild(x+1,y) and canBuild(x,y-1) == false and canBuild(x,y+1)
+        #   X
+        # 0 ? 0
+        # 0 0 X
+        if canBuild(x+1,y+1) == false and canBuild(x-1,y+1)
+          build('topright',x,y)
+        #   X
+        # 0 ? 0
+        #   0 X
         if canBuild(x+1,y+1) == false
           build('topright',x,y)
-        if canBuild(x-1,y+1) == false
+        #   X
+        # 0 ? 0
+        # X 0 0
+        if canBuild(x-1,y+1) == false and canBuild(x-1,y+1)
           build('topleft',x,y)
+        #   X
+        # 0 ? 0
+        #   0
+        #   0
         else if canBuild(x,y+2)
           build('pfront',x,y)
         else
@@ -164,13 +202,26 @@ genMap = ->
       else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1) == false
         build('rleft',x,y)
       else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1)
-        build('left',x,y)
+        if canBuild(x+1,y-1) == false
+          build('topleft',x,y)
+        else if canBuild(x+1,y+1) == false
+          build('rleft',x,y)
+        else
+          build('left',x,y)
+      #   0 
+      # 0 ? X
+      #   0
       else if canBuild(x-1,y) and canBuild(x+1,y) == false and canBuild(x,y-1) and canBuild(x,y+1)
-        build('right',x,y)
+        if canBuild(x+1,y-1) == false and canBuild(x-1,y-1) == false
+          build('topright',x,y)
+        else if canBuild(x-1,y+1) == false
+          build('rright',x,y)
+        else
+          build('right',x,y)
   
   for x in [0...width]
     for y in [0...height]
-      placeBuilding(x,y)  
+      placeBuilding(x,y)          
   
   for x in [0...width]
     for y in [0...height]
@@ -178,16 +229,62 @@ genMap = ->
         ground[x][y] = 'dirt'
       if ground[x][y] == 'dirt'
         ground[x][y] = 'grass'
-        if Math.random() < 0.05
+        if Math.random() < 0.25
           scenery[[x,y]] = 'shrub'
+    
+  for x in [1...width]
+    for y in [0...height-1]
+      if scenery[[x-1,y]]? and scenery[[x,y]]? and scenery[[x+1,y]]? and scenery[[x+2,y]]? and scenery[[x,y-1]]? == false and scenery[[x+1,y-1]]? == false
+        if scenery[[x-1,y]] != 'rdooropen' and scenery[[x,y]] == 'rfront' and scenery[[x+1,y]] == 'rfront' and scenery[[x+2,y]] == 'rfront' and Math.random() < 0.1
+          scenery[[x,y]] = 'ldooropen'
+          scenery[[x+1,y]] = 'rdooropen'
+        else scenery[[x-1,y]] != 'rdooropen' and if scenery[[x,y]] == 'pfront' and scenery[[x+1,y]] == 'pfront'and scenery[[x+2,y]] == 'pfront'  and Math.random() < 0.1
+          scenery[[x,y]] = 'ldooropen'
+          scenery[[x+1,y]] = 'rdooropen'
+    
+  y = 0
+  while y < height
+    x = 0
+    while x < width
+      # window
+      if scenery[[x,y]]? and scenery[[x,y-1]]? == false
+        if Math.random() < 0.5
+          if scenery[[x,y]] == 'rfront'
+            scenery[[x,y]] = if Math.random() < 0.6 then 'rwindow' else if Math.random() < 0.5 then 'rflag1' else 'rflag2'
+            ++x
+          else if scenery[[x,y]] == 'pfront'
+            scenery[[x,y]] = if Math.random() < 0.6 then 'pwindow' else if Math.random() < 0.5 then 'pflag1' else 'pflag2'
+            ++x
+      ++x
+    ++y
+    
+  cobbleCount = 0
+  for x in [0...width]
+    for y in [0...height]
+      if ground[x][y] == 'cobble'
+        ++cobbleCount
 
-  {layers:{ground, shadow, scenery}, width, height}
+  {layers:{ground, shadow, scenery}, width, height, cobbleCount}
 
 gmap = genMap()
 setMap expandMap gmap
 
+spawnLoc = ->
+  ground = gmap.layers.ground
+  c = 1 + Math.floor( Math.random() * (gmap.cobbleCount - 1) )
+  spawnX = 0
+  spawnY = 0  
+  for x in [0...width]
+    for y in [0...height]
+      if ground[x][y] == 'cobble'
+        if --c == 0
+          spawnX = x
+          spawnY = y
+  [spawnX * TILE_SIDE + TILE_SIDE2, spawnY * TILE_SIDE + TILE_SIDE2]
+
 players[getNextId()] =
   name:'herpderp'
+  type:'dude'
   x:100
   y:100
   dx:0
@@ -197,6 +294,32 @@ players[getNextId()] =
   ammo:8
   weapon:'pistol'
 
+dinoSpawnLoc = ->
+  spawnX = Math.floor( Math.random() * width )
+  spawnY = Math.floor( Math.random() * height )
+  scenery = gmap.layers.scenery
+  while scenery[[spawnX,spawnY]]? == true
+    spawnX = Math.floor( Math.random() * width )
+    spawnY = Math.floor( Math.random() * height )
+  [spawnX * TILE_SIDE + TILE_SIDE2, spawnY * TILE_SIDE + TILE_SIDE2]
+
+do ->
+  for id in [0...DINO_COUNT]
+    [x,y] = dinoSpawnLoc()
+    dirx = Math.random()
+    diry = Math.random()
+    d = players[id] =
+      name:'DinoNazi'
+      type:'dino'
+      x:x
+      y:y
+      dx: if dirx < 0.25 then -1 else if dirx < 0.75 then 0 else 1
+      dy: if diry < 0.25 then -1 else if diry < 0.75 then 0 else 1
+      angle:0
+      hp:2
+      ammo:8
+      weapon:'pistol'
+    addPlayerToGrid d
 
 wss.on 'connection', (c) ->
   id = getNextId()
@@ -221,12 +344,15 @@ wss.on 'connection', (c) ->
 
     try
       if state is 'connecting'
-        throw new Error unless typeof msg.name is 'string'
         name = msg.name
+        [x,y] = spawnLoc()
+        console.log x
+        console.log y
         players[id] = player =
           name:name
-          x:Math.random() * 10 * 64
-          y:Math.random() * 10 * 64
+          type: if Math.random() < 0.5 then 'dude' else 'man'
+          x:x
+          y:y
           dx:0
           dy:0
           angle:0

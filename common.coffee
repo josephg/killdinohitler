@@ -5,6 +5,8 @@ TILE_SIDE = 64
 TILE_SIDE2 = TILE_SIDE/2
 dt = 16
 
+DINO_COUNT = 20
+
 toTile = (x) -> Math.floor(x / TILE_SIDE)
 
 map = null
@@ -64,13 +66,15 @@ collision =
   'rleft': (x, y) -> x > 0
   'rright': (x, y) -> x < 0
   'rwindow': true
-  'rflag': true
+  'rflag1': true
+  'rflag2': true
 
   'pfront': true
   'pleft': (x, y) -> x > 0
   'pright': (x, y) -> x < 0
   'pwindow': true
-  'pflag': true
+  'pflag1': true
+  'pflag2': true
 
 # Is the specified point enterable?
 canEnterXY = (x, y) ->

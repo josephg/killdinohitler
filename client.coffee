@@ -36,6 +36,13 @@ frames = do ->
   f 'cobble'
 
   line()
+
+  f 'mandown', 3
+  f 'manleft', 3
+  f 'manup', 3
+  f 'manright', 3
+  f 'mandead' #, 3  dodgy
+  
   line()
 
   personthing = (thing) ->
@@ -75,6 +82,10 @@ frames = do ->
   f 'topright'
   f 'left'
   f 'right'
+  f 'leftdoor'
+  f 'rightdoor'
+  f 'ldooropen'
+  f 'rdooropen'
 
   line()
 
@@ -84,7 +95,10 @@ frames = do ->
   f 'rdoorright'
   f 'rdoorleft'
   f 'rwindow'
-  f 'rflag'
+  f 'rflag1'
+  f 'rflag2'
+  f 'rdright'
+  f 'rdleft'
 
   line()
 
@@ -94,7 +108,10 @@ frames = do ->
   f 'pdoorright'
   f 'pdoorleft'
   f 'pwindow'
-  f 'pflag'
+  f 'pflag1'
+  f 'pflag2'
+  f 'pdright'
+  f 'pdleft'
 
   line() for [1..6]
 
@@ -180,12 +197,12 @@ draw = ->
           if layer is 'scenery'
             ps = map.layers.player[x]?[y]
             continue unless ps
+            continue unless visible[[x,y]]
             for player in ps
-              continue if visible[[x,y]] and player isnt me
               ctx.fillStyle = 'black'
               ctx.fillText player.name, player.x, player.y - 40
               dir = ['right', 'down', 'left', 'up'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
-              sprite = if player.hp then "dude#{dir}" else 'dudedead'
+              sprite = if player.hp then "#{player.type}#{dir}" else "#{player.type}dead"
               drawSprite sprite, player.x-64, player.y-64, player.f
 
               if player.weapon and player.hp
