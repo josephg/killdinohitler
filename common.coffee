@@ -70,7 +70,7 @@ setPlayerPos = (p, newx, newy) ->
   addPlayerToGrid p
 
 PSPEED = 4
-BSPEED = 7
+BSPEED = 60
 
 # Shared between server and client
 commonUpdate = (gotHit) ->
@@ -95,8 +95,8 @@ commonUpdate = (gotHit) ->
 
   for b in bullets
     b.age++
-    b.x -= BSPEED * Math.cos b.angle
-    b.y -= BSPEED * Math.sin b.angle
+    b.x += BSPEED * Math.cos b.angle
+    b.y += BSPEED * Math.sin b.angle
 
     tx = toTile b.x
     ty = toTile b.y + TILE_SIDE/2

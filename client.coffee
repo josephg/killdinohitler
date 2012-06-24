@@ -167,13 +167,29 @@ draw = ->
             for player in ps
               ctx.fillStyle = 'black'
               ctx.fillText player.name, player.x, player.y - 40
-              dir = ['left', 'up', 'right', 'down'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
+              dir = ['right', 'down', 'left', 'up'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
               sprite = if player.hp then "dude#{dir}" else 'dudedead'
               drawSprite sprite, player.x-64, player.y-64, player.f
  
-    ctx.fillStyle = 'black'
+    # Draw bullets
+    ctx.strokeStyle = 'black'
+    ctx.lineWidth = 5
+    ctx.lineCap = 'round'
     for b in bullets
-      ctx.fillRect b.x - 5, b.y - 5, 10, 10
+      ctx.beginPath()
+      [x1,y1] = [b.x, b.y]
+      [x2,y2] = [b.x + 100 * Math.cos(b.angle), b.y + 100 * Math.sin b.angle]
+      grad = ctx.createLinearGradient x1, y1, x2, y2
+      grad.addColorStop 0, 'rgba(0,0,0,0)'
+      grad.addColorStop 1, 'black'
+
+      ctx.strokeStyle = grad
+      ctx.moveTo x1, y1
+      ctx.lineTo x2, y2
+      #ctx.lineTo b.x + 5, b.y + 5
+      #console.log b.x + BSPEED * Math.cos b.angle, b.y + BSPEED * Math.sin b.angle
+      ctx.stroke()
+      #ctx.fillRect b.x - 5, b.y - 5, 10, 10
 
     ctx.restore()
 
@@ -261,8 +277,8 @@ canvas.onmousemove = (e) ->
   x = e.pageX - canvas.offsetLeft
   y = e.pageY - canvas.offsetTop
 
-  dx = canvas.width/2 - x
-  dy = canvas.height/2 - y
+  dx = x - canvas.width/2
+  dy = y - canvas.height/2
 
   me.angle = Math.atan2 dy, dx
 
@@ -274,16 +290,16 @@ canvas.onmousedown = (e) ->
   x = e.pageX - canvas.offsetLeft
   y = e.pageY - canvas.offsetTop
 
+  e.preventDefault()
   return unless me and me.hp > 0
 
   if me.weapon is 'knife'
 
   else if me.ammo > 0
     sendPos()
-    angle = me.angle + (Math.random() * 0.2) - 0.1
+    angle = me.angle + (Math.random() * 0.05) - 0.025
     send {type:'attack', angle}
     shoot me, angle
-    e.preventDefault()
 
     if me.ammo <= 0
       me.weapon = 'knife'
