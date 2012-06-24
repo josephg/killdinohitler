@@ -219,37 +219,41 @@ wss.on 'connection', (c) ->
     catch e
       console.log 'invalid JSON', e, "'#{msg}'"
 
-    if state is 'connecting'
-      name = msg.name
-      players[id] = player =
-        name:name
-        x:Math.random() * 10 * 64
-        y:Math.random() * 10 * 64
-        dx:0
-        dy:0
-        angle:0
-        hp:2
-        ammo:8
-        weapon:'pistol'
+    try
+      if state is 'connecting'
+        throw new Error unless typeof msg.name is 'string'
+        name = msg.name
+        players[id] = player =
+          name:name
+          x:Math.random() * 10 * 64
+          y:Math.random() * 10 * 64
+          dx:0
+          dy:0
+          angle:0
+          hp:2
+          ammo:8
+          weapon:'pistol'
 
-      addPlayerToGrid player
-      throw new Error unless typeof name is 'string'
-      state = 'ok'
-      send {type:'login', gmap, id, players}
-      sendOthers {type:'connected', id, player}
-    else
-      switch msg.type
-        when 'pos'
-          setPlayerPos player, msg.x, msg.y
-          player[k] = msg[k] for k in ['dx', 'dy']
-          sendOthers msg
-        when 'angle'
-          player.angle = msg.angle
-          sendOthers msg
-        when 'attack'
-          sendOthers msg
-          shoot id, msg.angle
+        addPlayerToGrid player
+        throw new Error unless typeof name is 'string'
+        state = 'ok'
+        send {type:'login', gmap, id, players}
+        sendOthers {type:'connected', id, player}
+      else
+        switch msg.type
+          when 'pos'
+            setPlayerPos player, msg.x, msg.y
+            player[k] = msg[k] for k in ['dx', 'dy']
+            sendOthers msg
+          when 'angle'
+            player.angle = msg.angle
+            sendOthers msg
+          when 'attack'
+            sendOthers msg
+            shoot id, msg.angle
 
+    catch e
+      console.log "Error: #{e.message} #{e.stack}"
       #p = (players[c.name] ?= {alive:false, x:0, y:0})
 
   c.on 'close', ->

@@ -142,7 +142,7 @@ commonUpdate = (gotHit) ->
         b.die = true
         break
 
-      for id, p of players when b.p isnt p
+      for id, p of players when b.p isnt p and !b.die
         if within b, p, 30
           b.die = true
 

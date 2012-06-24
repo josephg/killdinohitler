@@ -155,9 +155,20 @@ draw = ->
     ctx.textAlign = 'center'
     ctx.font = '17px sans-serif'
 
+    visible = {}
+    visible[[toTile(me.x), toTile(me.y)]] = true
+    fovsettings =
+      shape: fov.SHAPE_CIRCLE
+      opaque: (m, x, y) -> !!map.layers.scenery[x]?[y]
+      apply: (m, x, y, sx, sy) -> visible[[x,y]] = true
+
+    fovdir = ['east', 'southeast', 'south', 'southwest', 'west', 'northwest', 'north', 'northeast'][Math.floor((me.angle + TAU/8 + TAU) / TAU * 8) % 8]
+    fov.beam fovsettings, null, toTile(me.x), toTile(me.y), 6, fovdir, 1.5
+
     for layer in ['ground', 'shadow', 'scenery']
       for y in [toTile(top)..toTile(bot)]
         for x in [toTile(left)..toTile(right)]
+          ctx.globalAlpha = (if visible[[x,y]] then 1 else 0.5)
           #if layer in ['player', 'shadow', 'scenery'] # Sparse layers
           #  thing = map.layers[layer][[x,y]]
           #else
@@ -170,6 +181,7 @@ draw = ->
             ps = map.layers.player[x]?[y]
             continue unless ps
             for player in ps
+              continue if visible[[x,y]] and player isnt me
               ctx.fillStyle = 'black'
               ctx.fillText player.name, player.x, player.y - 40
               dir = ['right', 'down', 'left', 'up'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
