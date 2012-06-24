@@ -41,55 +41,54 @@ gotHit = (id) ->
       
 closestPlayer = (x,y,range) ->
   closest = -1
-  dist = 99999  
+  dist = 99999
   scenery = gmap.layers.scenery
-  for id, p of players
+  for id, p of players when p.type isnt 'dino'
     px = toTile(p.x)
     py = toTile(p.y)
-    if id >= DINO_COUNT and p.hp > 0 and (scenery[[px,py]]? == false or scenery[[px,py]] != 'shrub')
+    if p.hp > 0 and (scenery[[px,py]]? == false or scenery[[px,py]] != 'shrub')
       xabs = Math.abs( p.x - x )
       yabs = Math.abs( p.y - y )
       d = xabs + yabs
-      max = if xabs > yabs then xabs else yabs
+      max = Math.max xabs, yabs
       if max < range and d < dist
         dist = d
-        closest = id        
+        closest = id
   closest
     
 updateDinos = ->
-  if players?
-      for id in [0...DINO_COUNT]
-        if players[id]?
-          dino = players[id]
-          changed = false
-          if dino.hp > 0
-            ++dino.attackTimer
-            pid = closestPlayer( dino.x, dino.y, 4 * 64 )
-            if pid >= 0
-              # move towards player
-              dino.dx = if players[pid].x > dino.x then 1 else if players[pid].x < dino.x then -1 else 0
-              dino.dy = if players[pid].y > dino.y then 1 else if players[pid].y < dino.y then -1 else 0
+  for id in [0...DINO_COUNT]
+    if players[id]?
+      dino = players[id]
+      changed = false
+      if dino.hp > 0
+        ++dino.attackTimer
+        pid = closestPlayer( dino.x, dino.y, 499 * 64 )
+        if pid >= 0
+          # move towards player
+          dino.dx = if players[pid].x > dino.x then 1 else if players[pid].x < dino.x then -1 else 0
+          dino.dy = if players[pid].y > dino.y then 1 else if players[pid].y < dino.y then -1 else 0
+          changed = true
+          # close enough to attack?
+          if Math.abs( players[pid].x - dino.x ) < 64 and Math.abs( players[pid].y - dino.y ) < 64 and dino.attackTimer >= 60
+            dino.attackTimer = 0
+            gotHit( pid )
+        else
+          # randomly change direction
+          if Math.random() < 0.02
+            changeDir = Math.random()
+            changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
+            if changeDir != dino.dx
+              dino.dx = changeDir
               changed = true
-              # close enough to attack?
-              if Math.abs( players[pid].x - dino.x ) < 64 and Math.abs( players[pid].y - dino.y ) < 64 and dino.attackTimer >= 60
-                dino.attackTimer = 0
-                gotHit( pid )
-            else
-              # randomly change direction
-              if Math.random() < 0.02
-                changeDir = Math.random()
-                changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
-                if changeDir != dino.dx
-                  dino.dx = changeDir
-                  changed = true
-              if Math.random() < 0.02
-                changeDir = Math.random()
-                changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
-                if changeDir != dino.dy
-                  dino.dy = changeDir
-                  changed = true
-          if changed
-            broadcast { id, type:'pos', x:dino.x, y:dino.y, dx:dino.dx, dy:dino.dy }
+          if Math.random() < 0.02
+            changeDir = Math.random()
+            changeDir =  if changeDir < 0.25 then -1 else if changeDir < 0.75 then 0 else 1
+            if changeDir != dino.dy
+              dino.dy = changeDir
+              changed = true
+      if changed
+        broadcast { id, type:'pos', x:dino.x, y:dino.y, dx:dino.dx, dy:dino.dy }
 
 update = ->
   commonUpdate gotHit
@@ -396,7 +395,7 @@ wss.on 'connection', (c) ->
   c.on 'message', (msg) ->
     bytesReceived += msg.length
 
-    console.log msg
+    #console.log msg
     try
       msg = JSON.parse msg
     catch e
@@ -406,8 +405,6 @@ wss.on 'connection', (c) ->
       if state is 'connecting'
         name = msg.name
         [x,y] = spawnLoc()
-        console.log x
-        console.log y
         players[id] = player =
           name:name
           type: if Math.random() < 0.5 then 'dude' else 'man'
@@ -466,3 +463,4 @@ setInterval ->
 app.listen port
 console.log "Listening on port #{port}"
 
+process.on 'uncaughtException', (err) -> console.log err

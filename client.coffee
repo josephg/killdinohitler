@@ -17,6 +17,58 @@ loadTex = (name) ->
 textures = {}
 textures[name] = loadTex name for name in ['spritesheet']
 
+
+muted = false
+
+sfx =
+  pistol: 'Pistol.wav'
+  knife: 'Knife.wav'
+  playerHit: 'PlayerHit.wav'
+  playerDeath: 'PlayerDeath.wav'
+  pickup: 'Pickup.wav'
+sounds = {}
+
+audioContext = new webkitAudioContext?()
+loadSound = (url, callback) ->
+  return callback 'No audio support' unless audioContext
+
+  request = new XMLHttpRequest()
+  request.open 'GET', url, true
+  request.responseType = 'arraybuffer'
+
+  request.onload = ->
+    audioContext.decodeAudioData request.response, (buffer) ->
+      #source = audioCtx.createBufferSource()
+      #source.buffer = buffer
+      callback null, buffer
+    , (error) ->
+      callback error
+
+  try
+    request.send()
+  catch e
+    callback e.message
+
+for s, url of sfx
+  do (s, url) ->
+    loadSound "Sound/#{url}", (error, buffer) ->
+      console.error error if error
+      sounds[s] = buffer if buffer
+      console.log "loaded #{s}"
+
+mixer = audioContext?.createGainNode()
+mixer?.connect audioContext.destination
+
+
+play = (name, time) ->
+  return unless sounds[name] and audioContext
+  source = audioContext.createBufferSource()
+  source.buffer = sounds[name]
+  source.connect mixer
+  source.noteOn time ? 0
+  source
+
+
 frames = do ->
   fr = {}
 
@@ -142,7 +194,7 @@ requestAnimationFrame = window.requestAnimationFrame or window.mozRequestAnimati
 
 update = ->
   canvas.focus()
-  commonUpdate()
+  commonUpdate null, play
 
 frameCount = 0
 lastFrameTime = 0
@@ -318,6 +370,8 @@ ws.onmessage = (msg) ->
     when 'gothit'
       {id} = msg
       players[id].hp--
+      #if players[id] is me
+      play 'playerHit'
     when 'respawn'
       players[msg.id].ammo = 4
       players[msg.id].hp = msg.hp
@@ -379,12 +433,14 @@ canvas.onmousedown = (e) ->
     sx = me.x + 32 * Math.cos me.angle
     sy = me.y + 32 * Math.sin me.angle
     send {type:'attack', angle:me.angle, x:sx, y:sy, weapon:'knife'}
+    play 'knife'
 
   else if me.ammo > 0
     sendPos()
     angle = me.angle + (Math.random() * 0.05) - 0.025
     send {type:'attack', angle:me.angle, weapon:me.weapon}
     shoot me, angle
+    play 'pistol'
 
     if me.ammo <= 0
       me.weapon = 'knife'
