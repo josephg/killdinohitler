@@ -119,7 +119,7 @@ BSPEED = 60
 
 # Shared between server and client
 commonUpdate = (gotHit, play) ->
-  for id, p of players
+  for id, p of players when p.hp > 0
     if p.dx or p.dy
       newx = p.x + p.dx * p.speed
       newy = p.y + p.dy * p.speed

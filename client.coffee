@@ -330,6 +330,7 @@ runFrame = ->
   update()
   requestAnimationFrame draw
 
+myId = null
 ws.onmessage = (msg) ->
   #console.log msg.data
   msg = JSON.parse msg.data
@@ -362,9 +363,12 @@ ws.onmessage = (msg) ->
       console.log 'dc', msg.id
     when 'pos'
       p = players[msg.id]
+      if p isnt me
       #console.log p, msg.x, msg.y
-      setPlayerPos p, msg.x, msg.y
-      p[k] = msg[k] for k in ['dx', 'dy']
+        setPlayerPos p, msg.x, msg.y
+        p[k] = msg[k] for k in ['dx', 'dy']
+      else
+        console.error 'someone is moving you.'
     when 'angle'
       p = players[msg.id]
       p.angle = msg.angle
@@ -385,8 +389,12 @@ ws.onmessage = (msg) ->
       players[id].kills++
       kills = players[id].kills
     when 'respawn'
-      players[msg.id].ammo = 4
-      players[msg.id].hp = msg.hp
+      p = players[msg.id]
+      p.ammo = 4
+      p.hp = msg.hp
+      p.weapon = 'pistol'
+      p.dx = p.dy = 0
+
       setPlayerPos players[msg.id], msg.x, msg.y
 
       if players[msg.id] is me
@@ -397,6 +405,8 @@ ws.onmessage = (msg) ->
 
 
 send = (msg) ->
+  msg.source = myId
+  #console.log msg if msg.type is 'pos'
   ws.send JSON.stringify msg
 
 rateLimit = (fn) ->
