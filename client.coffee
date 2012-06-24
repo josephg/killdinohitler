@@ -173,7 +173,12 @@ draw = ->
     ctx.font = '17px sans-serif'
 
     visible = {}
-    visible[[toTile(me.x), toTile(me.y)]] = true
+    [tx, ty] = [toTile(me.x), toTile(me.y)]
+    visible[[tx,ty]] = true
+    for x in [tx-1..tx+1]
+      for y in [ty-1..ty+1]
+        visible[[x,y]] = true
+
     fovsettings =
       shape: fov.SHAPE_CIRCLE
       opaque: (m, x, y) -> !!map.layers.scenery[x]?[y]
@@ -186,7 +191,6 @@ draw = ->
       for y in [toTile(top)..toTile(bot)]
         for x in [toTile(left)..toTile(right)]
           continue if layer is 'pickup' and !visible[[x,y]]
-          ctx.globalAlpha = (if visible[[x,y]] then 1 else 0.5)
           #if layer in ['player', 'shadow', 'scenery'] # Sparse layers
           #  thing = map.layers[layer][[x,y]]
           #else
@@ -212,6 +216,13 @@ draw = ->
               #ctx.strokeStyle = 'red'
               #ctx.strokeRect player.x - TILE_SIDE2, player.y, TILE_SIDE, TILE_SIDE2
  
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'
+    for y in [toTile(top)..toTile(bot)]
+      for x in [toTile(left)..toTile(right)]
+        unless visible[[x,y]]
+          ctx.fillRect x * TILE_SIDE, y * TILE_SIDE, TILE_SIDE, TILE_SIDE
+
+
     # Draw bullets
     ctx.strokeStyle = 'black'
     ctx.lineWidth = 5

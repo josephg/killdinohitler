@@ -94,7 +94,12 @@ canEnter = (x, y) ->
   ts2 = TILE_SIDE / 2
   slop = 4
   #(canEnter (toTile x), (toTile y))# and (canEnter (toTile x), (toTile y + TILE_SIDE))
-  (canEnterXY x-ts2+slop, y+slop) and (canEnterXY x+ts2-slop, y+slop) and (canEnterXY x-ts2+slop, y+ts2-slop) and (canEnterXY x+ts2-slop, y+ts2-slop)
+  (canEnterXY x-ts2+slop, y+slop) and
+    (canEnterXY x+ts2-slop, y+slop) and
+    (canEnterXY x-ts2+slop, y+ts2-slop) and
+    (canEnterXY x+ts2-slop, y+ts2-slop) and
+    (canEnterXY x, y+slop) and
+    (canEnterXY x, y+ts2-slop)
 
 removePlayerFromGrid = (p) ->
   console.warn 'Unit not in space' unless p in map?.layers.player?[toTile p.x]?[toTile p.y]
@@ -136,7 +141,7 @@ commonUpdate = (gotHit) ->
     if p.type isnt 'dino'
       if map.layers.pickup[tx]?[ty] is 'ammo'
         p.weapon = 'pistol' if p.weapon is 'knife'
-        p.ammo += 2
+        p.ammo += 3
         map.layers.pickup[tx]?[ty] = null
       if map.layers.pickup[tx]?[ty] is 'health' and p.hp > 0
         p.hp += 2
