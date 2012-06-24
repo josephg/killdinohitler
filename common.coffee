@@ -97,7 +97,7 @@ canEnter = (x, y) ->
   (canEnterXY x-ts2+slop, y+slop) and (canEnterXY x+ts2-slop, y+slop) and (canEnterXY x-ts2+slop, y+ts2-slop) and (canEnterXY x+ts2-slop, y+ts2-slop)
 
 removePlayerFromGrid = (p) ->
-  console.warn 'Unit not in space' unless p in map.layers.player[toTile p.x]?[toTile p.y]
+  console.warn 'Unit not in space' unless p in map?.layers.player?[toTile p.x]?[toTile p.y]
   map.layers.player[toTile p.x][toTile p.y] = (pl for pl in map.layers.player[toTile p.x][toTile p.y] when pl isnt p)
 
 addPlayerToGrid = (p) ->
@@ -133,10 +133,14 @@ commonUpdate = (gotHit) ->
           p.f++
 
     [tx, ty] = [toTile(p.x), toTile(p.y)]
-    if map.layers.pickup[tx]?[ty] is 'ammo'
-      p.weapon = 'pistol' if p.weapon is 'knife'
-      p.ammo += 2
-      map.layers.pickup[tx]?[ty] = null
+    if p.type isnt 'dino'
+      if map.layers.pickup[tx]?[ty] is 'ammo'
+        p.weapon = 'pistol' if p.weapon is 'knife'
+        p.ammo += 2
+        map.layers.pickup[tx]?[ty] = null
+      if map.layers.pickup[tx]?[ty] is 'health' and p.hp > 0
+        p.hp += 2
+        map.layers.pickup[tx]?[ty] = null
 
   for b in bullets
     b.age++
@@ -149,14 +153,13 @@ commonUpdate = (gotHit) ->
       b.y += s * Math.sin b.angle
 
       unless canEnter b.x, b.y + TILE_SIDE/2
-        b.die = true
-        break
+        b.hitwall = true
 
-      for id, p of players when b.p isnt p and !b.die
+      for id, p of players when b.p isnt p and !b.hitplayer
         if within b, p, 30
-          b.die = true
+          b.hitplayer = true
 
           gotHit? id, b
 
-  bullets = (b for b in bullets when b.age < 150 and !b.die)
+  bullets = (b for b in bullets when b.age < 150 and !b.hitplayer and !b.hitwall)
 

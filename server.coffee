@@ -32,6 +32,12 @@ gotHit = (id, b) ->
     if p.hp is 0
       p.dx = p.dy = 0
       broadcast {type:'pos', id, x:p.x, y:p.y, dx:p.dx, dy:p.dy}
+
+      spawn = if Math.random() < 0.4 then 'health' else 'ammo'
+      [tx, ty] = [toTile(p.x), toTile(p.y)]
+      console.log 'spawning', spawn
+      map.layers.pickup[tx][ty] = spawn
+      broadcast {type:'spawnpickup', tx, ty, spawn}
       
 closestPlayer = (x,y,range) ->
   closest = -1
@@ -58,7 +64,6 @@ updateDinos = ->
               # move towards player
               dino.dx = if players[pid].x > dino.x then 1 else if players[pid.x] < dino.x then -1 else 0
               dino.dy = if players[pid].y > dino.y then 1 else if players[pid.y] < dino.y then -1 else 0
-              console.log 'chasing player'
               changed = true
             else
               if Math.random() < 0.02
@@ -305,7 +310,11 @@ genMap = ->
 
   for x in [0...width]
     for y in [0...height] when !scenery[[x,y]] and ground[x][y] is 'tile'
-      pickup[[x,y]] = 'ammo' if Math.random() < 0.05
+      r = Math.random()
+      if r < 0.02
+        pickup[[x,y]] = 'ammo'
+      else if r < 0.03
+        pickup[[x,y]] = 'health'
     
   cobbleCount = 0
   for x in [0...width]
@@ -396,7 +405,7 @@ wss.on 'connection', (c) ->
           dy:0
           angle:0
           hp:2
-          ammo:8
+          ammo:4
           speed:4
           spawnTimer:0
           weapon:'pistol'

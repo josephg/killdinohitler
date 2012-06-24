@@ -179,7 +179,7 @@ draw = ->
       opaque: (m, x, y) -> !!map.layers.scenery[x]?[y]
       apply: (m, x, y, sx, sy) -> visible[[x,y]] = true
 
-    fovdir = ['east', 'southeast', 'south', 'southwest', 'west', 'northwest', 'north', 'northeast'][Math.floor((me.angle + TAU/8 + TAU) / TAU * 8) % 8]
+    fovdir = ['east', 'southeast', 'south', 'southwest', 'west', 'northwest', 'north', 'northeast'][Math.floor((me.angle + TAU/8 + TAU - TAU/16) / TAU * 8) % 8]
     fov.beam fovsettings, null, toTile(me.x), toTile(me.y), 6, fovdir, 1.5
 
     for layer in ['ground', 'scenery', 'pickup']
@@ -240,8 +240,11 @@ draw = ->
 
     # Draw health and ammo
     drawSprite 'heart', 0, 0
-    ctx.fillRect 100, 32 + 28, me.hp * 20, 4
-    ctx.strokeRect 100 - 1, 32 + 28 - 1, me.hp * 20 + 2, 4 + 2
+    for i in [0...me.hp]
+      ctx.fillRect 100 + 12 * i, 32 + 28, 6, 6
+      ctx.strokeRect 100 + 12 * i - 1, 32 + 28 - 1, 6 + 2, 6 + 2
+    #ctx.fillRect 100, 32 + 28, me.hp * 20, 4
+    #ctx.strokeRect 100 - 1, 32 + 28 - 1, me.hp * 20 + 2, 4 + 2
 
     drawSprite me.weapon, 0, 60
     for i in [0...me.ammo]
@@ -287,6 +290,9 @@ ws.onmessage = (msg) ->
       p.angle = msg.angle
     when 'attack'
       shoot players[msg.id], msg.angle
+    when 'spawnpickup'
+      console.log msg
+      map.layers.pickup[msg.tx][msg.ty] = msg.spawn
     when 'gothit'
       {id} = msg
       players[id].hp--
