@@ -5,6 +5,8 @@ TILE_SIDE = 64
 TILE_SIDE2 = TILE_SIDE/2
 dt = 16
 
+DINO_COUNT = 20
+
 toTile = (x) -> Math.floor(x / TILE_SIDE)
 
 map = null

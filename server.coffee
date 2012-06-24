@@ -32,6 +32,18 @@ gotHit = (id, b) ->
 
 update = ->
   commonUpdate gotHit
+  # update dinos
+  ### if players?
+    for id in [0...DINO_COUNT]
+      if players[id]?
+        dino = players[id]
+        if dino.hp > 0
+          if Math.random() < 0.02
+            dino.dx *= -1
+          if Math.random() < 0.02
+            dino.dy *= -1
+          setPlayerPos dino, dino.x + dino.dx, dino.y + dino.dy###
+  
 setInterval update, dt
 
 
@@ -103,9 +115,6 @@ genMap = ->
   build = (tile,x,y) ->
     ground[x][y] = 'tile'
     scenery[[x,y]] = tile
-  #  door = Math.random() > 0.95
-  #  if door and (tile == 'rfront' or tile == 'pfront')
-  #    scenery[[x,y]] = null
     
   placeBuilding = (x,y) ->
     if canBuild(x,y)
@@ -225,7 +234,7 @@ genMap = ->
     
   for x in [1...width]
     for y in [0...height-1]
-      if scenery[[x-1,y]]? and scenery[[x,y]]? and scenery[[x+1,y]]? and scenery[[x+2,y]]?
+      if scenery[[x-1,y]]? and scenery[[x,y]]? and scenery[[x+1,y]]? and scenery[[x+2,y]]? and scenery[[x,y-1]]? == false and scenery[[x+1,y-1]]? == false
         if scenery[[x-1,y]] != 'rdooropen' and scenery[[x,y]] == 'rfront' and scenery[[x+1,y]] == 'rfront' and scenery[[x+2,y]] == 'rfront' and Math.random() < 0.1
           scenery[[x,y]] = 'ldooropen'
           scenery[[x+1,y]] = 'rdooropen'
@@ -262,28 +271,20 @@ setMap expandMap gmap
 
 spawnLoc = ->
   ground = gmap.layers.ground
-  console.log gmap.cobbleCount
-  c = Math.floor( Math.random() * gmap.cobbleCount )
-  console.log c
+  c = 1 + Math.floor( Math.random() * (gmap.cobbleCount - 1) )
   spawnX = 0
-  spawnY = 0
-  
+  spawnY = 0  
   for x in [0...width]
     for y in [0...height]
       if ground[x][y] == 'cobble'
-        --c
-        if c == 1
-          console.log 'found'
+        if --c == 0
           spawnX = x
           spawnY = y
-  
-  console.log c
-  console.log spawnX
-  console.log spawnY
   [spawnX * TILE_SIDE + TILE_SIDE2, spawnY * TILE_SIDE + TILE_SIDE2]
 
 players[getNextId()] =
   name:'herpderp'
+  type:'dude'
   x:100
   y:100
   dx:0
@@ -293,6 +294,32 @@ players[getNextId()] =
   ammo:8
   weapon:'pistol'
 
+dinoSpawnLoc = ->
+  spawnX = Math.floor( Math.random() * width )
+  spawnY = Math.floor( Math.random() * height )
+  scenery = gmap.layers.scenery
+  while scenery[[spawnX,spawnY]]? == true
+    spawnX = Math.floor( Math.random() * width )
+    spawnY = Math.floor( Math.random() * height )
+  [spawnX * TILE_SIDE + TILE_SIDE2, spawnY * TILE_SIDE + TILE_SIDE2]
+
+do ->
+  for id in [0...DINO_COUNT]
+    [x,y] = dinoSpawnLoc()
+    dirx = Math.random()
+    diry = Math.random()
+    d = players[id] =
+      name:'DinoNazi'
+      type:'dino'
+      x:x
+      y:y
+      dx: if dirx < 0.25 then -1 else if dirx < 0.75 then 0 else 1
+      dy: if diry < 0.25 then -1 else if diry < 0.75 then 0 else 1
+      angle:0
+      hp:2
+      ammo:8
+      weapon:'pistol'
+    addPlayerToGrid d
 
 wss.on 'connection', (c) ->
   id = getNextId()
@@ -322,6 +349,7 @@ wss.on 'connection', (c) ->
       console.log y
       players[id] = player =
         name:name
+        type: if Math.random() < 0.5 then 'dude' else 'man'
         x:x
         y:y
         dx:0

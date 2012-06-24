@@ -36,6 +36,13 @@ frames = do ->
   f 'cobble'
 
   line()
+
+  f 'mandown', 3
+  f 'manleft', 3
+  f 'manup', 3
+  f 'manright', 3
+  f 'mandead' #, 3  dodgy
+  
   line()
 
   f 'dudedown', 3
@@ -178,7 +185,7 @@ draw = ->
               ctx.fillStyle = 'black'
               ctx.fillText player.name, player.x, player.y - 40
               dir = ['right', 'down', 'left', 'up'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
-              sprite = if player.hp then "dude#{dir}" else 'dudedead'
+              sprite = if player.hp then "#{player.type}#{dir}" else "#{player.type}dead"
               drawSprite sprite, player.x-64, player.y-64, player.f
               #ctx.strokeStyle = 'red'
               #ctx.strokeRect player.x - TILE_SIDE2, player.y, TILE_SIDE, TILE_SIDE2
