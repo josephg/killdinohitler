@@ -85,7 +85,10 @@ frames = do ->
   f 'rdoorright'
   f 'rdoorleft'
   f 'rwindow'
-  f 'rflag'
+  f 'rflag1'
+  f 'rflag2'
+  f 'rdright'
+  f 'rdleft'
 
   line()
 
@@ -95,7 +98,10 @@ frames = do ->
   f 'pdoorright'
   f 'pdoorleft'
   f 'pwindow'
-  f 'pflag'
+  f 'pflag1'
+  f 'pflag2'
+  f 'pdright'
+  f 'pdleft'
 
   fr
 

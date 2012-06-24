@@ -38,14 +38,14 @@ setInterval update, dt
 width = 64
 height = 64
 
-genMap = ->
+genMap = ->  
   ground = for x in [0...width]
     for y in [0...height]
       'dirt'
   # dirt mud grass cobble tile
   
   # generate roads (all 4 wide)
-  roads = Math.floor( 8 + Math.random() * 8 )
+  roads = Math.floor( 10 + Math.random() * 10 )
   for [0...roads]
     x = 0
     y = 0
@@ -117,7 +117,10 @@ genMap = ->
         # 0 ? 0
         # X 0
         if canBuild(x-1,y-1) == false and canBuild(x-1,y+1) == false
-          build('left',x,y)
+          if canBuild(x+1,y-1) == false
+            build('topleft',x,y)
+          else
+            build('left',x,y)
         #   0 X
         # 0 ? 0
         #   0 X
@@ -127,9 +130,17 @@ genMap = ->
         # 0 ? 0
         #   0 
         else if canBuild(x-1,y-1) == false or canBuild(x+1,y-1) == false
-          build('pfront',x,y)
+          if canBuild(x+1,y+1) == false
+            build('topright',x,y)
+          else
+            build('pfront',x,y)
         else
-          ground[x][y] = 'tile'
+          if canBuild(x+1,y+1) == false
+            build('rdleft',x,y)
+          else if canBuild(x-1,y+1) == false
+            build('rdright',x,y)
+          else
+            ground[x][y] = 'tile'
       #   0
       # 0 ? 0
       #   X
@@ -164,13 +175,27 @@ genMap = ->
       else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1) == false
         build('rleft',x,y)
       else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1)
-        build('left',x,y)
+        if canBuild(x+1,y-1) == false
+          build('topleft',x,y)
+        else if canBuild(x+1,y+1) == false
+          build('rleft',x,y)
+        else
+          build('left',x,y)
+      #   0 
+      # 0 ? X
+      #   0
       else if canBuild(x-1,y) and canBuild(x+1,y) == false and canBuild(x,y-1) and canBuild(x,y+1)
-        build('right',x,y)
+        if canBuild(x+1,y-1) == false and canBuild(x-1,y-1) == false
+          build('topright',x,y)
+        else if canBuild(x-1,y+1) == false
+          build('rright',x,y)
+        else
+          build('right',x,y)
   
   for x in [0...width]
     for y in [0...height]
-      placeBuilding(x,y)  
+      placeBuilding(x,y)        
+  
   
   for x in [0...width]
     for y in [0...height]
@@ -178,13 +203,57 @@ genMap = ->
         ground[x][y] = 'dirt'
       if ground[x][y] == 'dirt'
         ground[x][y] = 'grass'
-        if Math.random() < 0.05
+        if Math.random() < 0.25
           scenery[[x,y]] = 'shrub'
+       
+  y = 0
+  while y < height
+    x = 0
+    while x < width
+      # window
+      if scenery[[x,y]]? and scenery[[x,y-1]]? == false
+        if Math.random() < 0.5
+          if scenery[[x,y]] == 'rfront'
+            scenery[[x,y]] = if Math.random() < 0.6 then 'rwindow' else if Math.random() < 0.5 then 'rflag1' else 'rflag2'
+            ++x
+          else if scenery[[x,y]] == 'pfront'
+            scenery[[x,y]] = if Math.random() < 0.6 then 'pwindow' else if Math.random() < 0.5 then 'pflag1' else 'pflag2'
+            ++x
+      ++x
+    ++y
+    
+  cobbleCount = 0
+  for x in [0...width]
+    for y in [0...height]
+      if ground[x][y] == 'cobble'
+        ++cobbleCount
 
-  {layers:{ground, shadow, scenery}, width, height}
+  {layers:{ground, shadow, scenery}, width, height, cobbleCount}
 
 gmap = genMap()
 setMap expandMap gmap
+
+spawnLoc = ->
+  ground = gmap.layers.ground
+  console.log gmap.cobbleCount
+  c = Math.floor( Math.random() * gmap.cobbleCount )
+  console.log c
+  spawnX = 0
+  spawnY = 0
+  
+  for x in [0...width]
+    for y in [0...height]
+      if ground[x][y] == 'cobble'
+        --c
+        if c == 1
+          console.log 'found'
+          spawnX = x
+          spawnY = y
+  
+  console.log c
+  console.log spawnX
+  console.log spawnY
+  [spawnX * TILE_SIDE + TILE_SIDE2, spawnY * TILE_SIDE + TILE_SIDE2]
 
 players[getNextId()] =
   name:'herpderp'
@@ -221,10 +290,13 @@ wss.on 'connection', (c) ->
 
     if state is 'connecting'
       name = msg.name
+      [x,y] = spawnLoc()
+      console.log x
+      console.log y
       players[id] = player =
         name:name
-        x:Math.random() * 10 * 64
-        y:Math.random() * 10 * 64
+        x:x
+        y:y
         dx:0
         dy:0
         angle:0
