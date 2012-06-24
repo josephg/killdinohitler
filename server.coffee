@@ -43,7 +43,7 @@ closestPlayer = (x,y,range) ->
   closest = -1
   dist = 99999  
   for id, p of players
-    if id >= DINO_COUNT
+    if id >= DINO_COUNT and p.hp > 0
       xabs = Math.abs( p.x - x )
       yabs = Math.abs( p.y - y )
       d = xabs + yabs
@@ -60,12 +60,19 @@ updateDinos = ->
           dino = players[id]
           changed = false
           if dino.hp > 0
+            ++dino.attackTimer
             pid = closestPlayer( dino.x, dino.y, 4 * 64 )
             if pid >= 0
               # move towards player
               dino.dx = if players[pid].x > dino.x then 1 else if players[pid].x < dino.x then -1 else 0
               dino.dy = if players[pid].y > dino.y then 1 else if players[pid].y < dino.y then -1 else 0
               changed = true
+              # close enough to attack?
+              if Math.abs( players[pid].x - dino.x ) < 64 and Math.abs( players[pid].y - dino.y ) < 64 and dino.attackTimer >= 60
+                dino.attackTimer = 0
+                gotHit( pid )
+              #  players[pid].hp--
+              #  broadcast { id:pid, type:'gothit' }
             else
               # randomly change direction
               if Math.random() < 0.02
@@ -249,9 +256,9 @@ genMap = ->
         build('topright',x,y)
       else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) == false and canBuild(x,y+1)
         build('topleft',x,y)
-      else if canBuild(x-1,y) and canBuild(x+1,y) == false and canBuild(x,y-1) and canBuild(x,y+1) == false
+      else if canBuild(x-1,y) and canBuild(x+1,y) == false and canBuild(x,y-1) and canBuild(x,y+1) == false and canBuild(x-1,y-1)
         build('rright',x,y)
-      else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1) == false
+      else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1) == false and canBuild(x+1,y-1)
         build('rleft',x,y)
       else if canBuild(x-1,y) == false and canBuild(x+1,y) and canBuild(x,y-1) and canBuild(x,y+1)
         if canBuild(x+1,y-1) == false
@@ -285,7 +292,7 @@ genMap = ->
           scenery[[x,y]] = 'shrub'
     
   for x in [1...width]
-    for y in [0...height-1]
+    for y in [1...height-1]
       if scenery[[x-1,y]]? and scenery[[x,y]]? and scenery[[x+1,y]]? and scenery[[x+2,y]]? and scenery[[x,y-1]]? == false and scenery[[x+1,y-1]]? == false
         if scenery[[x-1,y]] != 'rdooropen' and scenery[[x,y]] == 'rfront' and scenery[[x+1,y]] == 'rfront' and scenery[[x+2,y]] == 'rfront' and Math.random() < 0.2
           scenery[[x,y]] = 'ldooropen'
@@ -369,6 +376,7 @@ do ->
       weapon:'pistol'
       speed:2
       spawnTimer:0
+      attackTimer:60
     addPlayerToGrid d
 
 wss.on 'connection', (c) ->
