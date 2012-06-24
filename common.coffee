@@ -118,8 +118,8 @@ setPlayerPos = (p, newx, newy) ->
 BSPEED = 60
 
 # Shared between server and client
-commonUpdate = (gotHit) ->
-  for id, p of players      
+commonUpdate = (gotHit, play) ->
+  for id, p of players
     if p.dx or p.dy
       newx = p.x + p.dx * p.speed
       newy = p.y + p.dy * p.speed
@@ -144,9 +144,11 @@ commonUpdate = (gotHit) ->
         p.weapon = 'pistol' if p.weapon is 'knife'
         p.ammo += 3
         map.layers.pickup[tx]?[ty] = null
+        play? 'pickup'
       if map.layers.pickup[tx]?[ty] is 'health' and p.hp > 0
         p.hp += 1
         map.layers.pickup[tx]?[ty] = null
+        play? 'pickup'
 
   for b in bullets
     b.age++
