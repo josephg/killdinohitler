@@ -33,6 +33,7 @@ expandMap = (gmap) ->
   m.layers.player = []
   m.layers.scenery = expandSparseLayer gmap.layers.scenery, gmap.width, gmap.height
   m.layers.pickup = expandSparseLayer gmap.layers.pickup, gmap.width, gmap.height
+  m.layers.seen = []
   m
 
 dist2 = (a, b) ->
@@ -144,7 +145,7 @@ commonUpdate = (gotHit) ->
         p.ammo += 3
         map.layers.pickup[tx]?[ty] = null
       if map.layers.pickup[tx]?[ty] is 'health' and p.hp > 0
-        p.hp += 2
+        p.hp += 1
         map.layers.pickup[tx]?[ty] = null
 
   for b in bullets

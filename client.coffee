@@ -147,7 +147,6 @@ frameCount = 0
 lastFrameTime = 0
 fpselem = document.getElementById 'fps'
 
-
 draw = ->
   now = Math.floor(Date.now()/1000)
   if now != lastFrameTime
@@ -178,11 +177,15 @@ draw = ->
     for x in [tx-1..tx+1]
       for y in [ty-1..ty+1]
         visible[[x,y]] = true
+        (map.layers.seen[x] ||= [])[y] = true
 
     fovsettings =
       shape: fov.SHAPE_CIRCLE
-      opaque: (m, x, y) -> !!map.layers.scenery[x]?[y]
-      apply: (m, x, y, sx, sy) -> visible[[x,y]] = true
+      opaque: (m, x, y) ->
+        (map.layers.seen[x] ||= [])[y] = true
+        !!map.layers.scenery[x]?[y]
+      apply: (m, x, y, sx, sy) ->
+        visible[[x,y]] = true
 
     fovdir = ['east', 'southeast', 'south', 'southwest', 'west', 'northwest', 'north', 'northeast'][Math.floor((me.angle + TAU/8 + TAU - TAU/16) / TAU * 8) % 8]
     fov.beam fovsettings, null, toTile(me.x), toTile(me.y), 6, fovdir, 1.5
@@ -190,6 +193,7 @@ draw = ->
     for layer in ['ground', 'scenery', 'pickup']
       for y in [toTile(top)..toTile(bot)]
         for x in [toTile(left)..toTile(right)]
+          continue unless map.layers.seen[x]?[y]
           continue if layer is 'pickup' and !visible[[x,y]]
           #if layer in ['player', 'shadow', 'scenery'] # Sparse layers
           #  thing = map.layers[layer][[x,y]]
@@ -276,12 +280,18 @@ ws.onmessage = (msg) ->
   switch msg.type
     when 'login'
       setMap expandMap msg.gmap
-
       myId = msg.id
       for id, p of msg.players
         players[id] = p
         addPlayerToGrid p for id, p of players
       me = players[myId]
+
+      [tx, ty] = [toTile(me.x), toTile(me.y)]
+      for x in [tx-3..tx+3]
+        for y in [ty-3..ty+3]
+          (map.layers.seen[x] ||= [])[y] = true
+
+
     when 'connected'
       p = players[msg.id] = msg.player
       addPlayerToGrid p
@@ -310,6 +320,13 @@ ws.onmessage = (msg) ->
     when 'respawn'
       players[msg.id].hp = msg.hp
       setPlayerPos players[msg.id], msg.x, msg.y
+
+      if players[msg.id] is me
+        [tx, ty] = [toTile(me.x), toTile(me.y)]
+        for x in [tx-3..tx+3]
+          for y in [ty-3..ty+3]
+            (map.layers.seen[x] ||= [])[y] = true
+
 
 send = (msg) ->
   ws.send JSON.stringify msg
