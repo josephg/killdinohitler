@@ -318,6 +318,7 @@ ws.onmessage = (msg) ->
       {id} = msg
       players[id].hp--
     when 'respawn'
+      players[msg.id].ammo = 4
       players[msg.id].hp = msg.hp
       setPlayerPos players[msg.id], msg.x, msg.y
 
