@@ -38,19 +38,18 @@ frames = do ->
   line()
   line()
 
-  f 'dudedown', 3
-  f 'dudeleft', 3
-  f 'dudeup', 3
-  f 'duderight', 3
-  f 'dudedead' #, 3  dodgy
+  personthing = (thing) ->
+    f "#{thing}down", 3
+    f "#{thing}left", 3
+    f "#{thing}up", 3
+    f "#{thing}right", 3
+    f "#{thing}dead" #, 3  dodgy
+
+  personthing 'dude'
 
   line()
 
-  f 'dinodown', 3
-  f 'dinoleft', 3
-  f 'dinoup', 3
-  f 'dinoright', 3
-  f 'dinodead', 3
+  personthing 'dino'
 
   line()
 
@@ -96,6 +95,12 @@ frames = do ->
   f 'pdoorleft'
   f 'pwindow'
   f 'pflag'
+
+  line() for [1..6]
+
+  personthing 'knife'
+  line()
+  personthing 'pistol'
 
   fr
 
@@ -170,6 +175,10 @@ draw = ->
               dir = ['right', 'down', 'left', 'up'][Math.floor((player.angle + TAU/8 + TAU) / TAU * 4) % 4]
               sprite = if player.hp then "dude#{dir}" else 'dudedead'
               drawSprite sprite, player.x-64, player.y-64, player.f
+
+              if player.weapon and player.hp
+                drawSprite "#{player.weapon}#{dir}", player.x-64, player.y-64, player.f
+
               #ctx.strokeStyle = 'red'
               #ctx.strokeRect player.x - TILE_SIDE2, player.y, TILE_SIDE, TILE_SIDE2
  
