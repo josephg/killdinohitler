@@ -165,7 +165,7 @@ commonUpdate = (gotHit) ->
         if within b, p, 30
           b.hitplayer = true
 
-          gotHit? id, b
+          gotHit? id, b.p
 
   bullets = (b for b in bullets when b.age < 150 and !b.hitplayer and !b.hitwall)
 

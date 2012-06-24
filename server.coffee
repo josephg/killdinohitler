@@ -24,14 +24,19 @@ broadcast = (msg, ignored) ->
     bytesSent += s.length
     cc.send s
 
-gotHit = (id) ->
+gotHit = (id,bid) ->
   p = players[id]
   if p.hp > 0
     p.hp--
     broadcast {type:'gothit', id}
     if p.hp is 0
+      if bid? 
+        bid.kills++
+        broadcast {type:'kill', id:bid.id}
+      p.deaths++
       p.dx = p.dy = 0
       broadcast {type:'pos', id, x:p.x, y:p.y, dx:p.dx, dy:p.dy}
+      broadcast {type:'death', id}
 
       spawn = if Math.random() < 0.4 then 'health' else 'ammo'
       [tx, ty] = [toTile(p.x), toTile(p.y)]
@@ -409,6 +414,7 @@ wss.on 'connection', (c) ->
         console.log x
         console.log y
         players[id] = player =
+          id:id
           name:name
           type: if Math.random() < 0.5 then 'dude' else 'man'
           x:x

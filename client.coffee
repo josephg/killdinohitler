@@ -318,6 +318,14 @@ ws.onmessage = (msg) ->
     when 'gothit'
       {id} = msg
       players[id].hp--
+    when 'death'
+      {id} = msg
+      players[id].deaths++
+    when 'kill'
+      {id} = msg
+      players[id].kills++
+      kills = players[id].kills
+      console.log "player #{id} kills #{kills}"
     when 'respawn'
       players[msg.id].ammo = 4
       players[msg.id].hp = msg.hp
