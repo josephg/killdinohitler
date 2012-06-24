@@ -1,4 +1,6 @@
 *.swp
 .DS_Store
-*.js
+server.js
+client.js
+common.js
 node_modules
