@@ -35,14 +35,16 @@ gotHit = (id,bid) ->
         broadcast {type:'kill', id:bid.id}
       p.deaths++
       p.dx = p.dy = 0
-      broadcast {type:'pos', id, x:p.x, y:p.y, dx:p.dx, dy:p.dy}
+      #broadcast {type:'pos', id, x:p.x, y:p.y, dx:p.dx, dy:p.dy}
       broadcast {type:'death', id}
 
+      ###
       spawn = if Math.random() < 0.4 then 'health' else 'ammo'
       [tx, ty] = [toTile(p.x), toTile(p.y)]
       console.log 'spawning', spawn
       map.layers.pickup[tx][ty] = spawn
       broadcast {type:'spawnpickup', tx, ty, spawn}
+      ###
       
 closestPlayer = (x,y,range) ->
   closest = -1
@@ -68,7 +70,7 @@ updateDinos = ->
       changed = false
       if dino.hp > 0
         ++dino.attackTimer
-        pid = closestPlayer( dino.x, dino.y, 499 * 64 )
+        pid = closestPlayer( dino.x, dino.y, 4 * 64 )
         if pid >= 0
           # move towards player
           dino.dx = if players[pid].x > dino.x then 1 else if players[pid].x < dino.x then -1 else 0
@@ -103,6 +105,7 @@ update = ->
       if ++p.spawnTimer > (6*60)
         p.spawnTimer = 0
         p.hp = 2
+        p.weapon = 'knife'
         p.ammo = 4
         [x,y] = spawnLoc()
         setPlayerPos p, x, y
@@ -389,12 +392,14 @@ wss.on 'connection', (c) ->
   id = getNextId()
 
   sendOthers = (msg) ->
-    msg.id = id
+    msg.id = msg.myId or id
     broadcast msg, c
 
   state = 'connecting'
   name = null
-  send = (msg) -> c.send JSON.stringify msg
+  send = (msg) ->
+    #console.log 'sending', msg if msg.type is 'pos'
+    c.send JSON.stringify msg
   player = null
 
   c.on 'message', (msg) ->
@@ -405,6 +410,8 @@ wss.on 'connection', (c) ->
       msg = JSON.parse msg
     catch e
       console.log 'invalid JSON', e, "'#{msg}'"
+
+    #console.log msg if msg.type is 'pos'
 
     try
       if state is 'connecting'
@@ -458,7 +465,7 @@ wss.on 'connection', (c) ->
   c.on 'close', ->
     removePlayerFromGrid player
     delete players[id]
-    broadcast {type:'disconnected', id}
+    #broadcast {type:'disconnected', id}
 
 interval = 10 # seconds between TX/RX print statements
 setInterval ->
