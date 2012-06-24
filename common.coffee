@@ -108,15 +108,14 @@ setPlayerPos = (p, newx, newy) ->
   p.y = newy
   addPlayerToGrid p
 
-PSPEED = 4
 BSPEED = 60
 
 # Shared between server and client
 commonUpdate = (gotHit) ->
   for id, p of players
     if p.dx or p.dy
-      newx = p.x + p.dx * PSPEED
-      newy = p.y + p.dy * PSPEED
+      newx = p.x + p.dx * p.speed
+      newy = p.y + p.dy * p.speed
 
       newx = p.x unless canEnter newx, p.y
       newy = p.y unless canEnter newx, newy

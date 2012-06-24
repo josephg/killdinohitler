@@ -29,6 +29,9 @@ gotHit = (id, b) ->
   if p.hp > 0
     p.hp--
     broadcast {type:'gothit', id}
+    if p.hp is 0
+      p.dx = p.dy = 0
+      broadcast {type:'pos', id, x:p.x, y:p.y, dx:p.dx, dy:p.dy}
 
 update = ->
   commonUpdate gotHit
@@ -319,6 +322,7 @@ do ->
       hp:2
       ammo:8
       weapon:'pistol'
+      speed:3
     addPlayerToGrid d
 
 wss.on 'connection', (c) ->
@@ -358,6 +362,7 @@ wss.on 'connection', (c) ->
           angle:0
           hp:2
           ammo:8
+          speed:4
           weapon:'pistol'
 
         addPlayerToGrid player
