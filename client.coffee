@@ -290,6 +290,9 @@ ws.onmessage = (msg) ->
     when 'gothit'
       {id} = msg
       players[id].hp--
+    when 'respawn'
+      players[msg.id].hp = msg.hp
+      setPlayerPos players[msg.id], msg.x, msg.y
 
 send = (msg) ->
   ws.send JSON.stringify msg

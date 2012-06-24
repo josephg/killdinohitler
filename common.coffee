@@ -113,7 +113,7 @@ BSPEED = 60
 
 # Shared between server and client
 commonUpdate = (gotHit) ->
-  for id, p of players
+  for id, p of players      
     if p.dx or p.dy
       newx = p.x + p.dx * p.speed
       newy = p.y + p.dy * p.speed
