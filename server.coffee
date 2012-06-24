@@ -441,15 +441,8 @@ wss.on 'connection', (c) ->
           when 'attack'
             sendOthers msg
             if msg.weapon is 'knife'
-              console.log 'asdfdsfs'
-              sx = player.x + 32 * Math.cos msg.angle
-              sy = player.y + 32 * Math.sin msg.angle
-              console.log msg
-              console.log sx, sy, msg.angle, player.angle
-
               for id, p of players when p isnt player
-                if within p, {x:sx, y:sy}, 32
-                  console.log 'stab'
+                if within p, msg, 64
                   gotHit id
 
             else

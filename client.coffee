@@ -376,7 +376,9 @@ canvas.onmousedown = (e) ->
   return unless me and me.hp > 0
 
   if me.weapon is 'knife'
-    send {type:'attack', angle:me.angle, weapon:'knife'}
+    sx = me.x + 32 * Math.cos me.angle
+    sy = me.y + 32 * Math.sin me.angle
+    send {type:'attack', angle:me.angle, x:sx, y:sy, weapon:'knife'}
 
   else if me.ammo > 0
     sendPos()
