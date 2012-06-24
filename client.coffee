@@ -319,6 +319,12 @@ draw = ->
       ctx.fillRect 100 + 12 * i, 60 + 32 + 28, 6, 6
       ctx.strokeRect 100 + 12 * i - 1, 60 + 32 + 28 - 1, 6 + 2, 6 + 2
 
+    ctx.font = '17px sans-serif'
+    ctx.fillStyle = 'white'
+    ctx.textAlign = 'right'
+    ctx.fillText "Kills: #{me.kills}", 1000, 20
+    ctx.fillText "Deaths: #{me.deaths}", 1000, 40
+      
 runFrame = ->
   setTimeout runFrame, dt
   update()
